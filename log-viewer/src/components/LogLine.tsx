@@ -9,9 +9,11 @@ const LogLine = ({ logLine }: LogLineProps ): ReactElement => {
     let renderExpandCollapseIcon = () => {
         // TODO include - icon and no icon based on state/props
         return (
-            <span>
-                +
-            </span>
+            <>
+                <span> + </span>
+                <span> - </span>
+                <span> &nbsp; </span>
+            </>
         );
     }
 

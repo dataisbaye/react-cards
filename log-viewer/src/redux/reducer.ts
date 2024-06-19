@@ -30,6 +30,8 @@ function _onSetBackgroundColor(state: LogViewerState, action: SetBackgroundColor
 }
 
 // TODO should I try combineReducers?
-export const rootReducer = {
-    logViewer: logViewerReducer,
-};
+export const rootReducer = (state: LogViewerState, action: any) => {
+  return {
+    logViewer: logViewerReducer(state, action),
+  };
+}

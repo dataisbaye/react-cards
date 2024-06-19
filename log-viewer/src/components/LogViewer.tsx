@@ -7,8 +7,8 @@ import {LogViewerState} from "../redux/logViewerState.ts";
 
 const LogViewer = (): ReactElement => {
     // Use calls
-    const logLines = useSelector((state: LogViewerState) => state.logLines);
-    const backgroundColor = useSelector((state: LogViewerState) => state.backgroundColor);
+    const logLines = useSelector((state: LogViewerState) => state.logViewer.logLines);
+    const backgroundColor = useSelector((state: LogViewerState) => state.logViewer.backgroundColor);
 
     // Rendering
     const style = {
@@ -28,6 +28,7 @@ const LogViewer = (): ReactElement => {
             <div className={'log-viewer-header'}>
                 <div className="settings-opener">
                     <a href="#" data-toggle="modal" data-target="#settings-modal">
+                        testing 123
                         <Gear />
                     </a>
                 </div>

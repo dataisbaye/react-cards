@@ -16,7 +16,7 @@ const store = configureStore({
 
 if (process.env.NODE_ENV !== 'development') {
     registerCard(cardName, App, store);
-    registerCard(`${cardName}-editor`, () => <div>Editor</div>, store);
+    //registerCard(`${cardName}-editor`, () => <div>Editor</div>, store);
 } else {
     const signals = {
         hass: signal({}),
