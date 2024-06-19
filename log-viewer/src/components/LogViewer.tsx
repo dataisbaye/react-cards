@@ -28,7 +28,6 @@ const LogViewer = (): ReactElement => {
             <div className={'log-viewer-header'}>
                 <div className="settings-opener">
                     <a href="#" data-toggle="modal" data-target="#settings-modal">
-                        testing 123
                         <Gear />
                     </a>
                 </div>
