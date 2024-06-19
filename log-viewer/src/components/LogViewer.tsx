@@ -6,9 +6,9 @@ import {Gear} from "react-bootstrap-icons";
 import {LogViewerState} from "../redux/logViewerState.ts";
 
 const LogViewer = (): ReactElement => {
-    // Use calls
-    const logLines = useSelector((state: LogViewerState) => state.logViewer.logLines);
-    const backgroundColor = useSelector((state: LogViewerState) => state.logViewer.backgroundColor);
+    // Hooks
+    const logLines = useSelector((state: LogViewerState) => state.logLines);
+    const backgroundColor = useSelector((state: LogViewerState) => state.backgroundColor);
 
     // Rendering
     const style = {

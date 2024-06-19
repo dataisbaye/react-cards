@@ -1,5 +1,4 @@
 import {LogViewerState, initialState} from "./logViewerState.ts";
-
 import { SetLogLinesAction, SetBackgroundColorAction } from './actions.ts';
 
 function logViewerReducer(
@@ -29,9 +28,4 @@ function _onSetBackgroundColor(state: LogViewerState, action: SetBackgroundColor
   };
 }
 
-// TODO should I try combineReducers?
-export const rootReducer = (state: LogViewerState, action: any) => {
-  return {
-    logViewer: logViewerReducer(state, action),
-  };
-}
+export const rootReducer = logViewerReducer;
