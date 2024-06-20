@@ -1,16 +1,14 @@
-import LogLevel from "../enums/logLevel.ts";
+import {ILogLevel} from "../enums/logLevel.ts";
 import LogLine from "./logLine.ts";
 import LogSource from "../enums/logSource.ts";
 import moment, {Moment} from "moment";
+import LogSourceConfig, {ILogSourceConfig} from "./logSourceConfig.ts";
 
 class LogGenerator {
     constructor() {}
 
     getRandomSource() {
-        let sources = Object.keys(LogSource);
-        let idx = Math.floor(Math.random() * sources.length);
-        //idx = 0; // TODO remove
-        return sources[idx];
+        return LogSource.getRandomSource().name;
     }
 
     getRandomTimestamp(lowerBound: Moment, upperBound: Moment): string {
@@ -21,10 +19,10 @@ class LogGenerator {
         return moment(ut).format('YYYY-MM-DD HH:mm:ss');
     }
 
-    getRandomLevel(levels: Set<LogLevel>) {
-        let idx = Math.floor(Math.random() * levels.size);
-        //idx = 0; // TODO remove
-        return Array.from(levels.values())[idx];
+    getRandomLevel(levels: ILogLevel[]) {
+        let idx = Math.floor(Math.random() * levels.length);
+        idx = 0; // TODO remove
+        return levels[idx].name;
     }
 
     getRandomMessage() {
@@ -35,30 +33,28 @@ class LogGenerator {
         let message = [];
         for (let j = 0; j < numWords; j++) {
             let idx = Math.floor(Math.random() * words.length);
-            //idx = 0; // TODO remove
+            idx = 0; // TODO remove
             message.push(words[idx]);
         }
         return message.join(' ');
     }
 
-    generate(source: string, levels: Set<LogLevel>, startTimestamp: Moment, endTimestamp: Moment, numLogs: number) {
-        source = source || this.getRandomSource();
-
+    generate(logSourceConfig: ILogSourceConfig, numLogs: number) {
         let logLines = [];
         for (let i = 0; i < numLogs; i++) {
             console.log(`i: ${i}`);
-            let logLine = new LogLine(
-                source,
+            let logLine = LogLine.create(
+                logSourceConfig.name,
                 [
-                    this.getRandomTimestamp(startTimestamp, endTimestamp),
-                    this.getRandomLevel(levels),
+                    this.getRandomTimestamp(LogSourceConfig.momentStart(logSourceConfig), LogSourceConfig.momentEnd(logSourceConfig)),
+                    this.getRandomLevel(logSourceConfig.levels),
                     this.getRandomMessage(),
                 ],
             );
             logLines.push(logLine);
         }
 
-        logLines.sort((a, b) => b.timestamp.valueOf() - a.timestamp.valueOf());
+        //logLines.sort((a, b) => b.timestamp.valueOf() - a.timestamp.valueOf());
 
         return logLines;
     }

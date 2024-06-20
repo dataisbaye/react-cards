@@ -1,18 +1,13 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import {configureStore} from '@reduxjs/toolkit';
 import App from "./App.tsx";
 import registerCard from "./utilities/registerCard.ts";
 import {ReactCardProps} from "./utilities/createReactCard.tsx";
 import {signal} from "@preact/signals-react";
 import {Provider} from "react-redux";
-import {rootReducer} from "./redux/reducer.ts";
+import store from "./redux/store.ts";
 
 let cardName = 'log-viewer-card';
-
-const store = configureStore({
-    reducer: rootReducer,
-});
 
 if (process.env.NODE_ENV !== 'development') {
     registerCard(cardName, App, store);

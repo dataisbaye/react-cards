@@ -1,49 +1,52 @@
-import moment, {Moment} from "moment";
 import {v4 as uuidv4} from 'uuid';
+import LogLevel, {ILogLevel} from "../enums/logLevel.ts";
+import LogSource, {ILogSource} from "../enums/logSource.ts";
 
 type LogLineRow = [string, string, string];
 
-class LogLine {
+export interface ILogLine {
     id: string;
-    source: string;
-    timestamp: Moment;
-    timestampFormat: string;
-    level: string;
+    source: ILogSource;
+    timestamp: string;
+    level: ILogLevel;
     message: string;
     dupeIdBefore: string | null;
     dupeIdAfter: string | null;
+}
 
-    constructor(source: string, logLineRow: LogLineRow) {
-        this.id = uuidv4();
-        this.source = source;
-        this.timestampFormat = 'YYYY-MM-DD HH:mm:ss';
-        this.timestamp = moment(logLineRow[0], this.timestampFormat);
-        this.level = logLineRow[1];
-        this.message = logLineRow[2];
-        this.dupeIdBefore = null;
-        this.dupeIdAfter = null;
+class LogLine {
+    static create(source: string, row: LogLineRow): ILogLine {
+        return {
+            id: uuidv4(),
+            source: LogSource.create(source),
+            timestamp: row[0],
+            level: LogLevel.create(row[1]),
+            message: row[2],
+            dupeIdBefore: null,
+            dupeIdAfter: null,
+        };
     }
 
-    equals(other: LogLine, timeSensitive = true): boolean {
-        return this.source === other.source &&
-               this.message === other.message &&
-               this.level === other.level &&
+    static equals(a: ILogLine, b: ILogLine, timeSensitive = true): boolean {
+        return a.source === b.source &&
+               a.message === b.message &&
+               a.level === b.level &&
                (
                    !timeSensitive
-                   || this.atSameTimeAs(other)
+                   || LogLine.atSameTimeAs(a, b)
                );
     }
 
-    before(other: LogLine): boolean {
-        return this.timestamp < other.timestamp;
+    static before(a: ILogLine, b: ILogLine): boolean {
+        return a.timestamp < b.timestamp;
     }
 
-    after(other: LogLine): boolean {
-        return this.timestamp > other.timestamp;
+    static after(a: ILogLine, b: ILogLine): boolean {
+        return a.timestamp > b.timestamp;
     }
 
-    atSameTimeAs(other: LogLine): boolean {
-        return this.timestamp === other.timestamp;
+    static atSameTimeAs(a: ILogLine, b: ILogLine): boolean {
+        return a.timestamp === b.timestamp;
     }
 }
 

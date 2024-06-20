@@ -2,6 +2,9 @@
 import React, { useRef } from "react";
 import { ReactCardProps } from "./utilities/createReactCard";
 import LogViewer from "./components/LogViewer";
+import './css/index.css';
+import SettingsModal from "./components/SettingsModal.tsx";
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 declare global {
 	namespace JSX {
@@ -20,7 +23,8 @@ function App({ }: ReactCardProps) {
 
 	return (
 		<ha-card>
-			<LogViewer></LogViewer>
+			<LogViewer />
+			<SettingsModal />
 		</ha-card>
 	);
 }
