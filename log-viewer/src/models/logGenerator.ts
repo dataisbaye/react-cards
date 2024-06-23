@@ -42,7 +42,6 @@ class LogGenerator {
     generate(logSourceConfig: ILogSourceConfig, numLogs: number) {
         let logLines = [];
         for (let i = 0; i < numLogs; i++) {
-            console.log(`i: ${i}`);
             let logLine = LogLine.create(
                 logSourceConfig.name,
                 [
@@ -54,7 +53,9 @@ class LogGenerator {
             logLines.push(logLine);
         }
 
-        //logLines.sort((a, b) => b.timestamp.valueOf() - a.timestamp.valueOf());
+        logLines.sort((a, b) => {
+            return LogLine.compareTimestamps(b, a);
+        });
 
         return logLines;
     }

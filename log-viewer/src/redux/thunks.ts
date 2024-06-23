@@ -1,3 +1,4 @@
+/*
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import {addLogLines, addLogSourceConfig, setSelectedSources} from "./actions";
 import { LogViewerState } from "./logViewerState.ts";
@@ -9,8 +10,8 @@ import DupeMode from "../enums/dupeMode.ts";
 
 export const updateSelectedSources = createAsyncThunk(
     'updateSelectedSources',
-    async (selectedSources: string[], { dispatch, getState }) => {
-        const state = getState() as LogViewerState;
+    async (selectedSources: string[], thunkAPI) => {
+        let state: LogViewerState = thunkAPI.getState() as LogViewerState;
 
         for (const source of selectedSources) {
             if (!state.logSourceConfigs[source]) {
@@ -29,11 +30,12 @@ export const updateSelectedSources = createAsyncThunk(
                 );
 
                 let logs = logGenerator.generate(logSourceConfig, 100);
-                dispatch(addLogLines(logs));
-                dispatch(addLogSourceConfig(logSourceConfig));
+                thunkAPI.dispatch(addLogLines(logs));
+                thunkAPI.dispatch(addLogSourceConfig(logSourceConfig));
             }
         }
 
-        dispatch(setSelectedSources(selectedSources));
+        thunkAPI.dispatch(setSelectedSources(selectedSources));
     }
 );
+ */

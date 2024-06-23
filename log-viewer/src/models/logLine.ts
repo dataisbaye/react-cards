@@ -10,6 +10,7 @@ export interface ILogLine {
     timestamp: string;
     level: ILogLevel;
     message: string;
+    explicitExpandCollapse: boolean | null;
     dupeIdBefore: string | null;
     dupeIdAfter: string | null;
 }
@@ -22,19 +23,30 @@ class LogLine {
             timestamp: row[0],
             level: LogLevel.create(row[1]),
             message: row[2],
+            explicitExpandCollapse: null,
             dupeIdBefore: null,
             dupeIdAfter: null,
         };
     }
 
     static equals(a: ILogLine, b: ILogLine, timeSensitive = true): boolean {
-        return a.source === b.source &&
+        return a.source.name === b.source.name &&
                a.message === b.message &&
-               a.level === b.level &&
+               a.level.name === b.level.name &&
                (
                    !timeSensitive
                    || LogLine.atSameTimeAs(a, b)
                );
+    }
+
+    static compareTimestamps(a: ILogLine, b: ILogLine): number {
+        if (LogLine.before(a, b)) {
+            return -1;
+        } else if (LogLine.after(a, b)) {
+            return 1;
+        } else {
+            return 0;
+        }
     }
 
     static before(a: ILogLine, b: ILogLine): boolean {

@@ -36,7 +36,10 @@ const LogViewer = (): ReactElement => {
     const renderLogLines = () => {
         return logLines.map((logLine: ILogLine) => {
             return (
-                <LogLine key={logLine.id} logLine={logLine} />
+                <LogLine
+                    key={logLine.id}
+                    logLine={logLine}
+                />
             );
         });
     }

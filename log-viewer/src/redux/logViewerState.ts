@@ -1,13 +1,9 @@
-import LogLevel, {ILogLevel} from '../enums/logLevel.ts';
-import DupeMode from '../enums/dupeMode.ts';
-import LogGenerator from "../models/logGenerator.ts";
-import ILogLine from '../models/logLine.ts';
-import LogSourceConfig, {ILogSourceConfig} from '../models/logSourceConfig.ts';
-import moment from "moment";
+import {ILogLine} from '../models/logLine.ts';
+import {ILogSourceConfig} from '../models/logSourceConfig.ts';
 import ColorMode, {IColorMode} from "../enums/colorMode.ts";
 import {ILogSource} from "../enums/logSource.ts";
 
-type MapStrColor = { [key: string]: Color };
+type MapStrColor = { [key: string]: string };
 type MapStrLogSourceConfig = { [key: string]: ILogSourceConfig};
 
 export interface LogViewerState {
@@ -22,7 +18,7 @@ export interface LogViewerState {
   colorMode: IColorMode;
   hideColorModeDetail: boolean;
   backgroundColor: string;
-  //logSourceColors: MapStrColor;
+  logSourceColors: MapStrColor;
 
   // Source configs
   logSourceConfigs: MapStrLogSourceConfig;
@@ -31,15 +27,8 @@ export interface LogViewerState {
   showSettingsModal: boolean;
 }
 
-// Get all log levels and put in a set
-let levels = new Set<ILogLevel>(Object.values(LogLevel.cache));
-let startTimestamp = moment().subtract(1, 'days')
-let endTimestamp = moment()
-let logGenerator = new LogGenerator();
-let logLines = logGenerator.generate(null, levels, startTimestamp, endTimestamp, 100);
-
 export const initialState: LogViewerState = {
-  logLines: logLines,
+  logLines: [],
   selectedSources: [],
 
   // Timestamps
@@ -48,9 +37,9 @@ export const initialState: LogViewerState = {
 
   // Color
   colorMode: ColorMode.LEVEL,
-  hideColorModeDetail: true,
-  backgroundColor: '#999999',
-  //logSourceColors: {},
+  hideColorModeDetail: false,
+  backgroundColor: '#000000',
+  logSourceColors: {},
 
   // Source configs
   logSourceConfigs: {},

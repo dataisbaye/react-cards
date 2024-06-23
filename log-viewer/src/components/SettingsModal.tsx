@@ -5,8 +5,14 @@ import {ReactElement} from "react";
 import {useDispatch, useSelector} from "react-redux";
 import {LogViewerState} from "../redux/logViewerState.ts";
 import * as actions from "../redux/actions.ts";
-import * as thunks from "../redux/thunks.ts";
 import LogSource, {ILogSource} from "../enums/logSource.ts";
+import LogGenerator from "../models/logGenerator.ts";
+import LogLevel from "../enums/logLevel.ts";
+import DupeMode from "../enums/dupeMode.ts";
+import moment from "moment";
+import LogSourceConfig, {ILogSourceConfig} from "../models/logSourceConfig.ts";
+import {addLogLines, addLogSourceConfig, setSelectedSources} from "../redux/actions.ts";
+import LogSourceConfigAccordion from "./LogSourceConfigAccordion.tsx";
 
 type SettingsModalProps = {
 }
@@ -14,6 +20,8 @@ type SettingsModalProps = {
 const SettingsModal = ({}: SettingsModalProps): ReactElement => {
     let dispatch = useDispatch();
     let show = useSelector((state: LogViewerState) => state.showSettingsModal);
+
+    let selectedSources = useSelector((state: LogViewerState) => state.selectedSources);
 
     // Timestamps
     let hideTimestamps = useSelector((state: LogViewerState) => state.hideTimestamps);
@@ -24,7 +32,9 @@ const SettingsModal = ({}: SettingsModalProps): ReactElement => {
     let hideColorModeDetail = useSelector((state: LogViewerState) => state.hideColorModeDetail);
     let backgroundColor = useSelector((state: LogViewerState) => state.backgroundColor);
 
-    let selectedSources = useSelector((state: LogViewerState) => state.selectedSources);
+    // Source Configs
+    let logSourceConfigs = useSelector((state: LogViewerState) => state.logSourceConfigs);
+
 
 
     let debounceDispatchHandler: string | number | NodeJS.Timeout;
@@ -49,9 +59,31 @@ const SettingsModal = ({}: SettingsModalProps): ReactElement => {
                 multiple
                 value={selectedSources.map((source) => source.name)}
                 onChange={(event) => {
+                    // TODO probably should be a thunk?
                     let selectedSourceNames = Array.from(event.target.selectedOptions).map((option) => option.value);
-                    dispatch(actions.setSelectedSources(selectedSourceNames));
-                    dispatch(thunks.updateSelectedSources(selectedSourceNames));
+                    for (const source of selectedSourceNames) {
+                        if (!logSourceConfigs[source]) {
+                            // TODO get logs from generator instead of API for now
+                            let logGenerator = new LogGenerator();
+                            let levels = new Set(Object.values(LogLevel.cache));
+                            let dupeMode = DupeMode.SHOW_FIRST;
+                            let startTimestamp = moment().subtract(1, 'days');
+                            let endTimestamp = moment();
+                            let logSourceConfig = LogSourceConfig.create(
+                                source,
+                                levels,
+                                dupeMode,
+                                startTimestamp.format(LogSourceConfig.timestampFormat),
+                                endTimestamp.format(LogSourceConfig.timestampFormat),
+                            );
+
+                            let logs = logGenerator.generate(logSourceConfig, 100);
+                            dispatch(addLogLines(logs));
+                            dispatch(addLogSourceConfig(logSourceConfig));
+                        }
+                    }
+
+                    dispatch(setSelectedSources(selectedSourceNames));
                 }}
             >
                 {options}
@@ -163,16 +195,12 @@ const SettingsModal = ({}: SettingsModalProps): ReactElement => {
         );
     }
 
-    const renderDefaultSourceConfigFormAccordion = () => {
-        return null;
-    }
-
     const renderSourceConfigFormAccordions = () => {
-        return null;
-    }
-
-    const renderAddSourceConfigAccordion = () => {
-        return null;
+        return Object.values(logSourceConfigs).map((logSourceConfig: ILogSourceConfig) => {
+            return (
+                <LogSourceConfigAccordion key={logSourceConfig.nameHyphenated} logSourceConfig={logSourceConfig} />
+            );
+        });
     }
 
     return (
@@ -185,9 +213,7 @@ const SettingsModal = ({}: SettingsModalProps): ReactElement => {
             </Modal.Header>
             <Modal.Body>
                 {renderGlobalSettingsFormAccordion()}
-                {renderDefaultSourceConfigFormAccordion()}
                 {renderSourceConfigFormAccordions()}
-                {renderAddSourceConfigAccordion()}
             </Modal.Body>
         </Modal>
     );

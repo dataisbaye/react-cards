@@ -12,3 +12,5 @@ export const setColorMode = createAction<string>('SET_COLOR_MODE');
 export const setHideColorModeDetail = createAction<boolean>('SET_HIDE_COLOR_MODE_DETAIL');
 export const setHideTimestamps = createAction<boolean>('SET_HIDE_TIMESTAMPS');
 export const setHideTimestampYear = createAction<boolean>('SET_HIDE_TIMESTAMP_YEAR');
+export const setLogSourceConfig = createAction<ILogSourceConfig>('SET_LOG_SOURCE_CONFIG');
+export const toggleExpandCollapse = createAction<ILogLine>('TOGGLE_EXPAND_COLLAPSE');

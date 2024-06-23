@@ -1,22 +1,26 @@
 import {ReactElement} from "react";
 import {ILogLine} from "../models/logLine";
 import {LogViewerState} from "../redux/logViewerState.ts";
-import {useSelector} from "react-redux";
+import {useDispatch, useSelector} from "react-redux";
 import ColorMode from "../enums/colorMode.ts";
 import DupeMode from "../enums/dupeMode.ts";
 import moment from "moment";
+import LogLevel from "../enums/logLevel.ts";
+import {toggleExpandCollapse} from "../redux/actions.ts";
 
 type LogLineProps = {
     logLine: ILogLine;
 }
 
 const LogLine = ({ logLine }: LogLineProps ): ReactElement => {
+    let dispatch = useDispatch();
     let selectedSources = useSelector((state: LogViewerState) => state.selectedSources);
     let colorMode = useSelector((state: LogViewerState) => state.colorMode);
     let hideColorModeDetail = useSelector((state: LogViewerState) => state.hideColorModeDetail);
     let hideTimestamps = useSelector((state: LogViewerState) => state.hideTimestamps);
     let hideTimestampYear = useSelector((state: LogViewerState) => state.hideTimestampYear);
     let logSourceConfigs = useSelector((state: LogViewerState) => state.logSourceConfigs);
+    let logSourceColors = useSelector((state: LogViewerState) => state.logSourceColors);
 
     let hasLogSourceConfig = logSourceConfigs[logLine.source.name] !== undefined;
     let dupeMode = hasLogSourceConfig ? logSourceConfigs[logLine.source.name].dupeMode : DupeMode.SHOW_FIRST;
@@ -30,6 +34,14 @@ const LogLine = ({ logLine }: LogLineProps ): ReactElement => {
             }
         }
         return '';
+    }
+
+    let color = () => {
+        if (colorMode === ColorMode.LEVEL) {
+            return LogLevel.color(logLine.level);
+        } else {
+            return logSourceColors[logLine.source.name] ?? 'black';
+        }
     }
 
     let renderTimestamp = () => {
@@ -62,7 +74,11 @@ const LogLine = ({ logLine }: LogLineProps ): ReactElement => {
 
         return (
             <span>
-                <span>
+                <span
+                    onClick={() => {
+                        dispatch(toggleExpandCollapse(logLine));
+                    }}
+                >
                     {icon}
                 </span>
                 <span>
@@ -106,12 +122,19 @@ const LogLine = ({ logLine }: LogLineProps ): ReactElement => {
         );
     }
 
-    if (!hasLogSourceConfig) {
+    if (!hasLogSourceConfig
+        || !selectedSources.map((ss) => ss.name).includes(logLine.source.name)
+        ||
+    ) {
         return null;
     }
 
+    const style = {
+        color: color(),
+    };
+
     return (
-        <div>
+        <div style={style}>
             {renderTimestamp()}
             {renderSource()}
             {renderLevel()}

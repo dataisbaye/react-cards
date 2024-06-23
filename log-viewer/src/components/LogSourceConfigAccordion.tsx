@@ -1,60 +1,49 @@
 import Accordion from 'react-bootstrap/Accordion';
 import Form from 'react-bootstrap/Form';
 import {ReactElement} from "react";
-import {ILogSourceConfig} from "../models/logSourceConfig.ts";
-import LogSource from "../enums/logSource.ts";
+import LogSourceConfig, {ILogSourceConfig} from "../models/logSourceConfig.ts";
 import DupeMode from "../enums/dupeMode.ts";
+import {useDispatch} from "react-redux";
+import * as actions from "../redux/actions.ts";
+import moment from "moment";
 
 type LogSourceConfigProps = {
     logSourceConfig: ILogSourceConfig;
 }
 
 const LogSourceConfigAccordion = ({ logSourceConfig }: LogSourceConfigProps ): ReactElement => {
-    const renderSourceOptions = () => {
-        let anySelected = false;
-        let logSourceStrings = Object.keys(LogSource).filter((source: string) => isNaN(Number(source)));
-        return logSourceStrings.sort().map((source: string) => {
-            let selected = source === logSourceConfig.name;
-            anySelected ||= selected;
-            return (
-                <option value={source} selected={selected}>
-                    {source.replace(/_/g, ' ').toTitleCase()}
-                </option>
-            );
-        });
-    }
-
-    const renderSourceDropdown = () => {
-        if (logSourceConfig.name === 'defaults') {
-            return null;
-        }
-
-        return (
-            <Form.Select name={"source"} className={"form-control"}>
-                <option value="" disabled>Select Source</option>
-                {renderSourceOptions()}
-            </Form.Select>
-        );
-    }
+    let dispatch = useDispatch();
 
     const renderDupeModeOptions = () => {
-        let dupeModeStrings = Object.keys(DupeMode).filter((mode: string) => isNaN(Number(mode)));
-        let options = dupeModeStrings.map((dupeModeStr: string) => {
-            let dupeSingularPlural = dupeModeStr === DupeMode.SHOW_ALL.toString() ? 'Dupes' : 'Dupe';
-            let display = dupeModeStr.replace(/_/g, ' ').toTitleCase() + ' ' + dupeSingularPlural;
+        return Object.values(DupeMode.cache).map((dupeMode) => {
+            let dupeSingularPlural = dupeMode.name === DupeMode.SHOW_ALL.name ? 'Dupes' : 'Dupe';
+            let display = dupeMode.name.replace(/_/g, ' ').toTitleCase() + ' ' + dupeSingularPlural;
             return (
-                <option value={dupeModeStr} selected={logSourceConfig.dupeMode.toString() === dupeModeStr}>
+                <option key={dupeMode.name} value={dupeMode.name}>
                     {display}
                 </option>
             );
         });
-
-        return options;
     }
 
     const renderDupeModeSelect = () => {
         return (
-            <Form.Select name={"dupeMode"} className={"form-control"}>
+            <Form.Select
+                name={"dupeMode"}
+                className={"form-control"}
+                value={logSourceConfig.dupeMode.name}
+                onChange={(event: React.ChangeEvent<HTMLSelectElement>) => {
+                    let dupeMode = DupeMode.create(event.target.value);
+                    let newLogSourceConfig = LogSourceConfig.create(
+                        logSourceConfig.name,
+                        new Set(logSourceConfig.levels),
+                        dupeMode,
+                        logSourceConfig.startTimestamp,
+                        logSourceConfig.endTimestamp,
+                    );
+                    dispatch(actions.setLogSourceConfig(newLogSourceConfig));
+                }}
+            >
                 <option value="" disabled>Select Dupe Mode</option>
                 {renderDupeModeOptions()}
             </Form.Select>
@@ -62,22 +51,43 @@ const LogSourceConfigAccordion = ({ logSourceConfig }: LogSourceConfigProps ): R
     }
 
     const renderStartTimestampInput = () => {
-        let sourceTimestampFormat = 'YYYY-MM-DD HH:mm:ss';
+        let sourceTimestampFormat = 'YYYY-MM-DDTHH:mm:ss';
         return (
             <Form.Control
                 type={"datetime-local"}
                 name={"startTimestamp"}
-                value={logSourceConfig.startTimestamp.format('YYYY-MM-DDTHH:mm:ss')}
+                value={LogSourceConfig.momentStart(logSourceConfig).format(LogSourceConfig.timestampFormat)}
+                onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                    let newLogSourceConfig = LogSourceConfig.create(
+                        logSourceConfig.name,
+                        new Set(logSourceConfig.levels),
+                        logSourceConfig.dupeMode,
+                        moment(event.target.value, sourceTimestampFormat).format(LogSourceConfig.timestampFormat),
+                        logSourceConfig.endTimestamp,
+                    );
+                    dispatch(actions.setLogSourceConfig(newLogSourceConfig));
+                }}
             />
         );
     }
 
     const renderEndTimestampInput = () => {
+        let sourceTimestampFormat = 'YYYY-MM-DDTHH:mm:ss';
         return (
             <Form.Control
                 type={"datetime-local"}
                 name={"endTimestamp"}
-                value={logSourceConfig.endTimestamp.format('YYYY-MM-DDTHH:mm:ss')}
+                value={LogSourceConfig.momentEnd(logSourceConfig).format(LogSourceConfig.timestampFormat)}
+                onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                    let newLogSourceConfig = LogSourceConfig.create(
+                        logSourceConfig.name,
+                        new Set(logSourceConfig.levels),
+                        logSourceConfig.dupeMode,
+                        logSourceConfig.startTimestamp,
+                        moment(event.target.value, sourceTimestampFormat).format(LogSourceConfig.timestampFormat),
+                    );
+                    dispatch(actions.setLogSourceConfig(newLogSourceConfig));
+                }}
             />
         );
     }
@@ -85,16 +95,15 @@ const LogSourceConfigAccordion = ({ logSourceConfig }: LogSourceConfigProps ): R
     const renderForm = () => {
         return (
             <div className={"config-source-form"} data-source={logSourceConfig.nameHyphenated}>
-                ${renderSourceDropdown()}
-                ${renderDupeModeSelect()}
-                ${renderStartTimestampInput()}
-                ${renderEndTimestampInput()}
+                {renderDupeModeSelect()}
+                {renderStartTimestampInput()}
+                {renderEndTimestampInput()}
             </div>
         );
     }
 
     return (
-        <Accordion defaultActiveKey={"0"}>
+        <Accordion key={logSourceConfig.nameHyphenated} defaultActiveKey={"0"}>
             <Accordion.Item eventKey={"0"}>
                 <Accordion.Header>{logSourceConfig.nameProper}</Accordion.Header>
                 <Accordion.Body>
