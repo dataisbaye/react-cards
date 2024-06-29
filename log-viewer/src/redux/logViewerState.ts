@@ -1,21 +1,23 @@
 import {ILogLine} from '../models/logLine.ts';
 import {ILogSourceConfig} from '../models/logSourceConfig.ts';
-import ColorMode, {IColorMode} from "../enums/colorMode.ts";
-import {ILogSource} from "../enums/logSource.ts";
+import ColorModeEnum from "../enums/colorMode.ts";
+import {ColorModeType, LogSourceType} from "../models/types.ts";
 
 type MapStrColor = { [key: string]: string };
 type MapStrLogSourceConfig = { [key: string]: ILogSourceConfig};
+type MapStrLogLine = { [key: string]: ILogLine};
 
 export interface LogViewerState {
-  logLines: ILogLine[];
-  selectedSources: ILogSource[];
+  idToLogLine: MapStrLogLine;
+  logLineIds: string[];
+  selectedSources: LogSourceType[];
 
   // Timestamps
   hideTimestamps: boolean;
   hideTimestampYear: boolean;
 
   // Color
-  colorMode: IColorMode;
+  colorMode: ColorModeType;
   hideColorModeDetail: boolean;
   backgroundColor: string;
   logSourceColors: MapStrColor;
@@ -28,7 +30,8 @@ export interface LogViewerState {
 }
 
 export const initialState: LogViewerState = {
-  logLines: [],
+  idToLogLine: {},
+  logLineIds: [],
   selectedSources: [],
 
   // Timestamps
@@ -36,7 +39,7 @@ export const initialState: LogViewerState = {
   hideTimestampYear: true,
 
   // Color
-  colorMode: ColorMode.LEVEL,
+  colorMode: ColorModeEnum.LEVEL,
   hideColorModeDetail: false,
   backgroundColor: '#000000',
   logSourceColors: {},

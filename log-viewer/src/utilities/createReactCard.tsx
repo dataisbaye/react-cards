@@ -1,10 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { Signal } from "@preact/signals-react";
-import {EnhancedStore, StoreEnhancer, ThunkDispatch, Tuple, UnknownAction} from "@reduxjs/toolkit";
-import {Provider} from "react-redux";
-import {LogViewerState} from "../redux/logViewerState.ts";
-import {ActionTypes} from "../redux/actions.ts";
 
 export type ReactCardProps = {
 	hass: Signal<unknown>;
@@ -16,7 +12,6 @@ export type ReactCardProps = {
 const createReactCard = (
 	ReactComponent: React.ElementType,
 	signals: ReactCardProps,
-	store:  EnhancedStore<LogViewerState, ActionTypes, Tuple<[StoreEnhancer<{dispatch: ThunkDispatch<LogViewerState, undefined, UnknownAction>}>, StoreEnhancer]>>,
 ) => {
 	return class Card extends HTMLElement {
 		root: ReactDOM.Root;
@@ -38,14 +33,12 @@ const createReactCard = (
 		render() {
 			this.root.render(
 				<React.StrictMode>
-					<Provider store={store}>
-						<ReactComponent
-							cardName={signals.cardName}
-							hass={signals.hass}
-							config={signals.config}
-							cardSize={signals.cardSize}
-						/>
-					</Provider>
+					<ReactComponent
+						cardName={signals.cardName}
+						hass={signals.hass}
+						config={signals.config}
+						cardSize={signals.cardSize}
+					/>
 				</React.StrictMode>
 			);
 		}

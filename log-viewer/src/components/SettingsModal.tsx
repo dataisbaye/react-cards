@@ -5,14 +5,15 @@ import {ReactElement} from "react";
 import {useDispatch, useSelector} from "react-redux";
 import {LogViewerState} from "../redux/logViewerState.ts";
 import * as actions from "../redux/actions.ts";
-import LogSource, {ILogSource} from "../enums/logSource.ts";
 import LogGenerator from "../models/logGenerator.ts";
-import LogLevel from "../enums/logLevel.ts";
-import DupeMode from "../enums/dupeMode.ts";
+import LogLevelEnum from "../enums/logLevel.ts";
+import DupeModeEnum from "../enums/dupeMode.ts";
 import moment from "moment";
 import LogSourceConfig, {ILogSourceConfig} from "../models/logSourceConfig.ts";
 import {addLogLines, addLogSourceConfig, setSelectedSources} from "../redux/actions.ts";
 import LogSourceConfigAccordion from "./LogSourceConfigAccordion.tsx";
+import LogSourceEnum from "../enums/logSource.ts";
+import {LogSourceType} from "../models/types.ts";
 
 type SettingsModalProps = {
 }
@@ -47,17 +48,18 @@ const SettingsModal = ({}: SettingsModalProps): ReactElement => {
     };
 
     const renderSourceDropdown = () => {
-        let sources = Object.values(LogSource.cache).sort((a: ILogSource, b: ILogSource) => a.name.localeCompare(b.name));
-        let options = sources.map((source: ILogSource) => {
+        let sources = Object.values(LogSourceEnum);
+        sources = sources.sort((a: LogSourceType, b: LogSourceType) => a.localeCompare(b));
+        let options = sources.map((source: LogSourceType) => {
             return (
-                <option key={source.name} value={source.name}>{source.name}</option>
+                <option key={source} value={source}>{source}</option>
             );
         });
 
         return (
             <Form.Select
                 multiple
-                value={selectedSources.map((source) => source.name)}
+                value={selectedSources.map((source) => source)}
                 onChange={(event) => {
                     // TODO probably should be a thunk?
                     let selectedSourceNames = Array.from(event.target.selectedOptions).map((option) => option.value);
@@ -65,8 +67,8 @@ const SettingsModal = ({}: SettingsModalProps): ReactElement => {
                         if (!logSourceConfigs[source]) {
                             // TODO get logs from generator instead of API for now
                             let logGenerator = new LogGenerator();
-                            let levels = new Set(Object.values(LogLevel.cache));
-                            let dupeMode = DupeMode.SHOW_FIRST;
+                            let levels = new Set(Object.values(LogLevelEnum));
+                            let dupeMode = DupeModeEnum.SHOW_FIRST;
                             let startTimestamp = moment().subtract(1, 'days');
                             let endTimestamp = moment();
                             let logSourceConfig = LogSourceConfig.create(
@@ -147,7 +149,7 @@ const SettingsModal = ({}: SettingsModalProps): ReactElement => {
                             <div className={"row"}>
                                 <div className={"col col-6"}>
                                     <Form.Select
-                                        value={colorMode.name}
+                                        value={colorMode}
                                         onChange={(event) => {
                                             dispatch(actions.setColorMode(event.target.value));
                                         }}

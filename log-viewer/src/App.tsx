@@ -5,6 +5,8 @@ import LogViewer from "./components/LogViewer";
 import './css/index.css';
 import SettingsModal from "./components/SettingsModal.tsx";
 import 'bootstrap/dist/css/bootstrap.min.css';
+import store from "./redux/store.ts";
+import {Provider} from "react-redux";
 
 declare global {
 	namespace JSX {
@@ -22,10 +24,12 @@ function App({ }: ReactCardProps) {
 	renderRef.current++;
 
 	return (
-		<ha-card>
-			<LogViewer />
-			<SettingsModal />
-		</ha-card>
+		<Provider store={store}>
+			<ha-card>
+				<LogViewer />
+				<SettingsModal />
+			</ha-card>
+		</Provider>
 	);
 }
 

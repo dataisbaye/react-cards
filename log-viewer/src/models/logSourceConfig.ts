@@ -1,14 +1,13 @@
-import {IDupeMode} from "../enums/dupeMode.ts";
 import '../extensions/string.ts';
-import {ILogLevel} from "../enums/logLevel.ts";
 import moment from "moment";
+import {DupeModeType, LogLevelType, LogSourceType} from "./types.ts";
 
 export interface ILogSourceConfig {
-    name: string;
+    name: LogSourceType;
     nameProper: string;
     nameHyphenated: string;
-    dupeMode: IDupeMode;
-    levels: ILogLevel[];
+    dupeMode: DupeModeType;
+    levels: LogLevelType[];
     startTimestamp: string;
     endTimestamp: string;
 }
@@ -16,7 +15,7 @@ export interface ILogSourceConfig {
 class LogSourceConfig {
     static timestampFormat = 'YYYY-MM-DD HH:mm:ss';
 
-    static create(name: string, levels: Set<ILogLevel>, dupeMode: IDupeMode, startTimestamp: string, endTimestamp: string) {
+    static create(name: LogSourceType, levels: Set<LogLevelType>, dupeMode: DupeModeType, startTimestamp: string, endTimestamp: string) {
         return {
             name: name,
             nameProper: name.replace(/_/g, ' ').toTitleCase(),

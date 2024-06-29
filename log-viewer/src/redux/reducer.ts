@@ -1,8 +1,8 @@
 import {initialState, LogViewerState} from "./logViewerState.ts";
 import * as actions from "./actions.ts";
 import {createReducer} from "@reduxjs/toolkit";
-import LogSource from "../enums/logSource.ts";
-import ColorMode from "../enums/colorMode.ts";
+import LogSourceEnum from "../enums/logSource.ts";
+import ColorModeEnum from "../enums/colorMode.ts";
 import Color from "../models/color.ts";
 import LogLine, {ILogLine} from "../models/logLine.ts";
 
@@ -18,17 +18,17 @@ export const reducer = createReducer(initialState, (builder) => {
           state.showSettingsModal = false;
         })
         .addCase(actions.setSelectedSources, (state, action) => {
-            state.selectedSources = action.payload.map((source) => LogSource.create(source));
+            state.selectedSources = action.payload.map((source) => source);
             updateLogSourceColors(state);
         })
         .addCase(actions.addLogSourceConfig, (state, action) => {
             state.logSourceConfigs[action.payload.name] = action.payload;
         })
         .addCase(actions.addLogLines, (state, action) => {
-            state.logLines = mergeLogLines(state, action.payload);
+            mergeLogLines(state, action.payload);
         })
         .addCase(actions.setColorMode, (state, action) => {
-            state.colorMode = ColorMode.create(action.payload);
+            state.colorMode = action.payload;
             updateLogSourceColors(state);
         })
         .addCase(actions.setHideColorModeDetail, (state, action) => {
@@ -44,9 +44,26 @@ export const reducer = createReducer(initialState, (builder) => {
             state.logSourceConfigs[action.payload.name] = action.payload;
         })
         .addCase(actions.toggleExpandCollapse, (state, action) => {
-            let logLine = state.logLines.find((line) => line.id === action.payload.id);
+            let logLine = state.idToLogLine[action.payload.id];
             if (logLine) {
-                logLine.explicitExpandCollapse = !logLine.explicitExpandCollapse;
+                // TODO should this be on a map for log viewer as a whole?
+                // TODO can I just set on logLine? or is that a copy?
+
+                state.idToLogLine[action.payload.id].explicitExpandIcon = action.payload.expandIcon;
+
+                // Set any dupes following this log line
+                let afterId = logLine.dupeIdAfter;
+                while (afterId != null) {
+                    state.idToLogLine[afterId].explicitExpandIcon = action.payload.expandIcon;
+                    afterId = state.idToLogLine[afterId].dupeIdAfter;
+                }
+
+                // Set any dupes preceding this log line
+                let beforeId = logLine.dupeIdBefore;
+                while (beforeId != null) {
+                    state.idToLogLine[beforeId].explicitExpandIcon = action.payload.expandIcon;
+                    beforeId = state.idToLogLine[beforeId].dupeIdBefore;
+                }
             }
         });
     }
@@ -61,54 +78,59 @@ function getLogSourceColors(state: LogViewerState) {
 
 function updateLogSourceColors(state: LogViewerState) {
     let needNewColors = state.selectedSources.length !== Object.keys(state.logSourceColors).length;
-    if (needNewColors && state.colorMode.name === ColorMode.SOURCE.name) {
+    if (needNewColors && state.colorMode === ColorModeEnum.SOURCE) {
         let colors = getLogSourceColors(state);
         state.selectedSources.map((source, idx) => {
-            state.logSourceColors[source.name] = colors[idx].asHex();
+            state.logSourceColors[source] = colors[idx].asHex();
         });
     }
 }
 
-function mergeLogLines(state: LogViewerState, logLines: ILogLine[]): ILogLine[] {
+function mergeLogLines(state: LogViewerState, logLines: ILogLine[]) {
     let sourceToLastLogLine: {[key: string]: ILogLine} = {};
-    let idToLogLine: {[key: string]: ILogLine} = {};
 
     let cur1 = 0;
     let cur2 = 0;
-    let merged = [];
-    while (cur1 < state.logLines.length || cur2 < logLines.length) {
-        if (cur1 >= state.logLines.length) {
-            merged.push(logLines[cur2]);
+    let mergedIds = [];
+    while (cur1 < state.logLineIds.length || cur2 < logLines.length) {
+        if (cur1 >= state.logLineIds.length) {
+            mergedIds.push(logLines[cur2].id);
+            state.idToLogLine[logLines[cur2].id] = logLines[cur2];
             cur2++;
         } else if (cur2 >= logLines.length) {
-            merged.push(state.logLines[cur1]);
+            mergedIds.push(state.logLineIds[cur1]);
             cur1++;
-        } else if (LogLine.equals(state.logLines[cur1], logLines[cur2])) {
-            merged.push(state.logLines[cur1]);
-            cur1++;
-            cur2++;
-        } else if (LogLine.before(state.logLines[cur1], logLines[cur2])) {
-            merged.push(logLines[cur2]);
-            cur2++;
         } else {
-            merged.push(state.logLines[cur1]);
-            cur1++;
+            let stateLogLine = state.idToLogLine[state.logLineIds[cur1]];
+            let logLine = logLines[cur2];
+            if (LogLine.equals(stateLogLine, logLine)) {
+                mergedIds.push(state.logLineIds[cur1]);
+                cur1++;
+                cur2++;
+            } else if (LogLine.before(stateLogLine, logLine)) {
+                mergedIds.push(logLines[cur2].id);
+                state.idToLogLine[logLines[cur2].id] = logLines[cur2];
+                cur2++;
+            } else {
+                mergedIds.push(state.logLineIds[cur1]);
+                cur1++;
+            }
         }
 
-        let earlierLogLine = merged[merged.length - 1];
+        let earlierLogLineId = mergedIds[mergedIds.length - 1];
+        let earlierLogLine = state.idToLogLine[earlierLogLineId];
         handleDupes(earlierLogLine, sourceToLastLogLine);
 
-        sourceToLastLogLine[earlierLogLine.source.name] = earlierLogLine;
-        idToLogLine[earlierLogLine.id] = earlierLogLine;
+        sourceToLastLogLine[earlierLogLine.source] = earlierLogLine;
     }
 
-    return merged;
+    state.logLineIds = mergedIds;
 }
 
 function handleDupes(earlierLogLine: ILogLine, sourceToLastLogLine: { [key: string]: ILogLine }) {
     earlierLogLine.dupeIdBefore = null;
 
-    let laterLogLine = sourceToLastLogLine[earlierLogLine.source.name];
+    let laterLogLine = sourceToLastLogLine[earlierLogLine.source];
     if (laterLogLine == null) {
         earlierLogLine.dupeIdAfter = null;
     } else {

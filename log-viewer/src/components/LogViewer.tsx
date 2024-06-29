@@ -1,6 +1,5 @@
 import {ReactElement} from "react";
 import {useDispatch, useSelector} from "react-redux";
-import {ILogLine} from "../models/logLine.ts";
 import LogLine from "./LogLine.tsx";
 import {Gear} from "react-bootstrap-icons";
 import {LogViewerState} from "../redux/logViewerState.ts";
@@ -10,7 +9,7 @@ import * as actions from "../redux/actions.ts";
 const LogViewer = (): ReactElement => {
     // State
     const dispatch = useDispatch();
-    const logLines = useSelector((state: LogViewerState) => state.logLines);
+    const logLineIds = useSelector((state: LogViewerState) => state.logLineIds);
     const backgroundColor = useSelector((state: LogViewerState) => state.backgroundColor);
 
     // Effects
@@ -34,11 +33,11 @@ const LogViewer = (): ReactElement => {
     }
 
     const renderLogLines = () => {
-        return logLines.map((logLine: ILogLine) => {
+        return logLineIds.map((id: string) => {
             return (
                 <LogLine
-                    key={logLine.id}
-                    logLine={logLine}
+                    key={id}
+                    logLineId={id}
                 />
             );
         });

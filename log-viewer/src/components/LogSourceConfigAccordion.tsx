@@ -2,7 +2,7 @@ import Accordion from 'react-bootstrap/Accordion';
 import Form from 'react-bootstrap/Form';
 import {ReactElement} from "react";
 import LogSourceConfig, {ILogSourceConfig} from "../models/logSourceConfig.ts";
-import DupeMode from "../enums/dupeMode.ts";
+import DupeModeEnum from "../enums/dupeMode.ts";
 import {useDispatch} from "react-redux";
 import * as actions from "../redux/actions.ts";
 import moment from "moment";
@@ -15,11 +15,12 @@ const LogSourceConfigAccordion = ({ logSourceConfig }: LogSourceConfigProps ): R
     let dispatch = useDispatch();
 
     const renderDupeModeOptions = () => {
-        return Object.values(DupeMode.cache).map((dupeMode) => {
-            let dupeSingularPlural = dupeMode.name === DupeMode.SHOW_ALL.name ? 'Dupes' : 'Dupe';
-            let display = dupeMode.name.replace(/_/g, ' ').toTitleCase() + ' ' + dupeSingularPlural;
+        let dupeModes = Object.values<string>(DupeModeEnum);
+        return dupeModes.map((dupeMode) => {
+            let dupeSingularPlural = dupeMode === DupeModeEnum.SHOW_ALL ? 'Dupes' : 'Dupe';
+            let display = dupeMode.replace(/_/g, ' ').toTitleCase() + ' ' + dupeSingularPlural;
             return (
-                <option key={dupeMode.name} value={dupeMode.name}>
+                <option key={dupeMode} value={dupeMode}>
                     {display}
                 </option>
             );
@@ -31,13 +32,12 @@ const LogSourceConfigAccordion = ({ logSourceConfig }: LogSourceConfigProps ): R
             <Form.Select
                 name={"dupeMode"}
                 className={"form-control"}
-                value={logSourceConfig.dupeMode.name}
+                value={logSourceConfig.dupeMode}
                 onChange={(event: React.ChangeEvent<HTMLSelectElement>) => {
-                    let dupeMode = DupeMode.create(event.target.value);
                     let newLogSourceConfig = LogSourceConfig.create(
                         logSourceConfig.name,
                         new Set(logSourceConfig.levels),
-                        dupeMode,
+                        event.target.value,
                         logSourceConfig.startTimestamp,
                         logSourceConfig.endTimestamp,
                     );

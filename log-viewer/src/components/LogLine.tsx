@@ -1,19 +1,21 @@
 import {ReactElement} from "react";
-import {ILogLine} from "../models/logLine";
 import {LogViewerState} from "../redux/logViewerState.ts";
 import {useDispatch, useSelector} from "react-redux";
-import ColorMode from "../enums/colorMode.ts";
-import DupeMode from "../enums/dupeMode.ts";
+import ColorModeEnum from "../enums/colorMode.ts";
+import DupeModeEnum from "../enums/dupeMode.ts";
 import moment from "moment";
-import LogLevel from "../enums/logLevel.ts";
+import {LogLevelColorEnum} from "../enums/logLevel.ts";
 import {toggleExpandCollapse} from "../redux/actions.ts";
+import {ToggleExpandCollapsePayload} from "../redux/types.ts";
+import LogLineModule from "../models/logLine.ts";
 
 type LogLineProps = {
-    logLine: ILogLine;
+    logLineId: string;
 }
 
-const LogLine = ({ logLine }: LogLineProps ): ReactElement => {
+const LogLine = ({ logLineId }: LogLineProps ): ReactElement => {
     let dispatch = useDispatch();
+    let logLine = useSelector((state: LogViewerState) => state.idToLogLine[logLineId]);
     let selectedSources = useSelector((state: LogViewerState) => state.selectedSources);
     let colorMode = useSelector((state: LogViewerState) => state.colorMode);
     let hideColorModeDetail = useSelector((state: LogViewerState) => state.hideColorModeDetail);
@@ -22,25 +24,28 @@ const LogLine = ({ logLine }: LogLineProps ): ReactElement => {
     let logSourceConfigs = useSelector((state: LogViewerState) => state.logSourceConfigs);
     let logSourceColors = useSelector((state: LogViewerState) => state.logSourceColors);
 
-    let hasLogSourceConfig = logSourceConfigs[logLine.source.name] !== undefined;
-    let dupeMode = hasLogSourceConfig ? logSourceConfigs[logLine.source.name].dupeMode : DupeMode.SHOW_FIRST;
+    let hasLogSourceConfig = logSourceConfigs[logLine.source] !== undefined;
+    let dupeMode = hasLogSourceConfig ? logSourceConfigs[logLine.source].dupeMode : DupeModeEnum.SHOW_FIRST;
+
+    let isFirst = logLine.dupeIdBefore === null;
+    let isLast =  logLine.dupeIdAfter === null;
 
     let hiddenColorModeTooltipText = () => {
         if (hideColorModeDetail) {
-            if (colorMode === ColorMode.LEVEL) {
-                return logLine.level.name;
-            } else if (colorMode === ColorMode.SOURCE) {
-                return logLine.source.name;
+            if (colorMode === ColorModeEnum.LEVEL) {
+                return logLine.level;
+            } else if (colorMode === ColorModeEnum.SOURCE) {
+                return logLine.source;
             }
         }
         return '';
     }
 
     let color = () => {
-        if (colorMode === ColorMode.LEVEL) {
-            return LogLevel.color(logLine.level);
+        if (colorMode === ColorModeEnum.LEVEL) {
+            return LogLevelColorEnum[logLine.level];
         } else {
-            return logSourceColors[logLine.source.name] ?? 'black';
+            return logSourceColors[logLine.source] ?? 'black';
         }
     }
 
@@ -60,26 +65,17 @@ const LogLine = ({ logLine }: LogLineProps ): ReactElement => {
     }
 
     let renderExpandCollapseIcon = () => {
-        // TODO make these individually adjustable outside of overall state
-        let hasDupe = logLine.dupeIdAfter !== null || logLine.dupeIdBefore !== null;
-
-        let icon = ' ';
-        if (hasDupe) {
-            if (dupeMode === DupeMode.SHOW_ALL) {
-                icon = '-';
-            } else {
-                icon = '+';
-            }
-        }
-
         return (
             <span>
                 <span
                     onClick={() => {
-                        dispatch(toggleExpandCollapse(logLine));
+                        dispatch(toggleExpandCollapse({
+                            id: logLine.id,
+                            expandIcon: LogLineModule.toggleExpandIcon(logLine, dupeMode),
+                        } as ToggleExpandCollapsePayload));
                     }}
                 >
-                    {icon}
+                    {LogLineModule.expandIcon(logLine, dupeMode)}
                 </span>
                 <span>
                     {'\u00a0'}
@@ -89,27 +85,27 @@ const LogLine = ({ logLine }: LogLineProps ): ReactElement => {
     }
 
     let renderSource = () => {
-        if (hideColorModeDetail && colorMode === ColorMode.SOURCE) {
+        if (hideColorModeDetail && colorMode === ColorModeEnum.SOURCE) {
             return null;
         }
 
-        let maxSourceLength = selectedSources.reduce((max, source) => Math.max(max, source.name.length), 0);
+        let maxSourceLength = selectedSources.reduce((max, source) => Math.max(max, source.length), 0);
 
         return (
             <span>
-                {logLine.source.name.padEnd(maxSourceLength+1, ' ').replace(/ /g, '\u00a0')}
+                {logLine.source.padEnd(maxSourceLength+1, ' ').replace(/ /g, '\u00a0')}
             </span>
         );
     }
 
     let renderLevel = () => {
-        if (hideColorModeDetail && colorMode === ColorMode.LEVEL) {
+        if (hideColorModeDetail && colorMode === ColorModeEnum.LEVEL) {
             return null;
         }
 
         return (
             <span>
-                {logLine.level.name.padEnd(8, ' ').replace(/ /g, '\u00a0')}
+                {logLine.level.padEnd(8, ' ').replace(/ /g, '\u00a0')}
             </span>
         );
     }
@@ -123,8 +119,22 @@ const LogLine = ({ logLine }: LogLineProps ): ReactElement => {
     }
 
     if (!hasLogSourceConfig
-        || !selectedSources.map((ss) => ss.name).includes(logLine.source.name)
-        ||
+        || !selectedSources.includes(logLine.source)
+        || (
+            logLine.explicitExpandIcon === '+'
+            && (
+                (dupeMode === DupeModeEnum.SHOW_ALL && !isFirst && !isLast)
+                || (dupeMode === DupeModeEnum.SHOW_FIRST && !isFirst)
+                || (dupeMode === DupeModeEnum.SHOW_LAST && !isLast)
+            )
+        )
+        || (
+            logLine.explicitExpandIcon === ' '
+            && (
+                (dupeMode === DupeModeEnum.SHOW_FIRST && !isFirst)
+                || (dupeMode === DupeModeEnum.SHOW_LAST && !isLast)
+            )
+        )
     ) {
         return null;
     }
