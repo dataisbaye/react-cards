@@ -2,48 +2,66 @@ import Accordion from "react-bootstrap/Accordion";
 import Form from "react-bootstrap/Form";
 import Modal from "react-bootstrap/Modal";
 import {ReactElement} from "react";
-import {useDispatch, useSelector} from "react-redux";
-import {LogViewerState} from "../redux/logViewerState.ts";
 import * as actions from "../redux/actions.ts";
-import LogGenerator from "../models/logGenerator.ts";
 import LogLevelEnum from "../enums/logLevel.ts";
 import DupeModeEnum from "../enums/dupeMode.ts";
 import moment from "moment";
 import LogSourceConfig, {ILogSourceConfig} from "../models/logSourceConfig.ts";
-import {addLogLines, addLogSourceConfig, setSelectedSources} from "../redux/actions.ts";
 import LogSourceConfigAccordion from "./LogSourceConfigAccordion.tsx";
 import LogSourceEnum from "../enums/logSource.ts";
 import {LogSourceType} from "../models/types.ts";
+import {useAppDispatch, useAppSelector} from "../redux/hooks.ts";
+import {updateBackgroundColor, updateColorMode, updateLogs} from "../redux/thunks.ts";
+import {useComputed} from "@preact/signals-react";
+import cardStates from "../cardStates.ts";
 
 type SettingsModalProps = {
+    cardName: string;
 }
 
-const SettingsModal = ({}: SettingsModalProps): ReactElement => {
-    let dispatch = useDispatch();
-    let show = useSelector((state: LogViewerState) => state.showSettingsModal);
+const SettingsModal = ({cardName}: SettingsModalProps): ReactElement => {
+    let dispatch = useAppDispatch();
+    let show = useAppSelector((state) => state.showSettingsModal);
 
-    let selectedSources = useSelector((state: LogViewerState) => state.selectedSources);
+    let selectedSources = useAppSelector((state) => state.selectedSources);
 
     // Timestamps
-    let hideTimestamps = useSelector((state: LogViewerState) => state.hideTimestamps);
-    let hideTimestampYear = useSelector((state: LogViewerState) => state.hideTimestampYear);
+    let hideTimestamps = useAppSelector((state) => state.hideTimestamps);
+    let hideTimestampYear = useAppSelector((state) => state.hideTimestampYear);
 
     // Color Mode
-    let colorMode = useSelector((state: LogViewerState) => state.colorMode);
-    let hideColorModeDetail = useSelector((state: LogViewerState) => state.hideColorModeDetail);
-    let backgroundColor = useSelector((state: LogViewerState) => state.backgroundColor);
+    let colorMode = useAppSelector((state) => state.colorMode);
+    let hideColorModeDetail = useAppSelector((state) => state.hideColorModeDetail);
+    let backgroundColor = useAppSelector((state) => state.backgroundColor);
 
     // Source Configs
-    let logSourceConfigs = useSelector((state: LogViewerState) => state.logSourceConfigs);
+    let logSourceConfigs = useAppSelector((state) => state.logSourceConfigs);
 
+    const fallback = {
+        config: {
+            value: {
+                apiUrl: 'https://example.com',
+                apiToken: 'example-token',
+            },
+        }
+    };
 
+    const apiUrl = useComputed(() => {
+        const { config } = cardStates.value[cardName] ?? fallback;
+        return (config.value as any)?.apiUrl;
+    });
+
+    const apiToken = useComputed(() => {
+        const { config } = cardStates.value[cardName] ?? fallback;
+        return (config.value as any)?.apiToken;
+    });
 
     let debounceDispatchHandler: string | number | NodeJS.Timeout;
     const debounceDispatch = (value: string) => {
         clearTimeout(debounceDispatchHandler);
         debounceDispatchHandler = setTimeout(() => {
             console.log('Dispatching background color change');
-            dispatch(actions.setBackgroundColor(value));
+            dispatch(updateBackgroundColor(value));
         }, 1000);
     };
 
@@ -61,12 +79,9 @@ const SettingsModal = ({}: SettingsModalProps): ReactElement => {
                 multiple
                 value={selectedSources.map((source) => source)}
                 onChange={(event) => {
-                    // TODO probably should be a thunk?
                     let selectedSourceNames = Array.from(event.target.selectedOptions).map((option) => option.value);
                     for (const source of selectedSourceNames) {
                         if (!logSourceConfigs[source]) {
-                            // TODO get logs from generator instead of API for now
-                            let logGenerator = new LogGenerator();
                             let levels = new Set(Object.values(LogLevelEnum));
                             let dupeMode = DupeModeEnum.SHOW_FIRST;
                             let startTimestamp = moment().subtract(1, 'days');
@@ -79,13 +94,9 @@ const SettingsModal = ({}: SettingsModalProps): ReactElement => {
                                 endTimestamp.format(LogSourceConfig.timestampFormat),
                             );
 
-                            let logs = logGenerator.generate(logSourceConfig, 100);
-                            dispatch(addLogLines(logs));
-                            dispatch(addLogSourceConfig(logSourceConfig));
+                            dispatch(updateLogs(source, apiUrl.value, apiToken.value, logSourceConfig));
                         }
                     }
-
-                    dispatch(setSelectedSources(selectedSourceNames));
                 }}
             >
                 {options}
@@ -151,7 +162,7 @@ const SettingsModal = ({}: SettingsModalProps): ReactElement => {
                                     <Form.Select
                                         value={colorMode}
                                         onChange={(event) => {
-                                            dispatch(actions.setColorMode(event.target.value));
+                                            dispatch(updateColorMode(event.target.value));
                                         }}
                                     >
                                         <option value="level">Level</option>

@@ -1,20 +1,15 @@
 import {ReactElement} from "react";
-import {useDispatch, useSelector} from "react-redux";
 import LogLine from "./LogLine.tsx";
 import {Gear} from "react-bootstrap-icons";
-import {LogViewerState} from "../redux/logViewerState.ts";
 import Button from "react-bootstrap/Button";
 import * as actions from "../redux/actions.ts";
+import {useAppDispatch, useAppSelector} from "../redux/hooks.ts";
 
 const LogViewer = (): ReactElement => {
     // State
-    const dispatch = useDispatch();
-    const logLineIds = useSelector((state: LogViewerState) => state.logLineIds);
-    const backgroundColor = useSelector((state: LogViewerState) => state.backgroundColor);
-
-    // Effects
-
-
+    const dispatch = useAppDispatch();
+    const logLineIds = useAppSelector((state) => state.logLineIds);
+    const backgroundColor = useAppSelector((state) => state.backgroundColor);
 
     // Rendering
     const style = {

@@ -1,9 +1,6 @@
 import {initialState, LogViewerState} from "./logViewerState.ts";
 import * as actions from "./actions.ts";
 import {createReducer} from "@reduxjs/toolkit";
-import LogSourceEnum from "../enums/logSource.ts";
-import ColorModeEnum from "../enums/colorMode.ts";
-import Color from "../models/color.ts";
 import LogLine, {ILogLine} from "../models/logLine.ts";
 
 export const reducer = createReducer(initialState, (builder) => {
@@ -19,7 +16,6 @@ export const reducer = createReducer(initialState, (builder) => {
         })
         .addCase(actions.setSelectedSources, (state, action) => {
             state.selectedSources = action.payload.map((source) => source);
-            updateLogSourceColors(state);
         })
         .addCase(actions.addLogSourceConfig, (state, action) => {
             state.logSourceConfigs[action.payload.name] = action.payload;
@@ -29,7 +25,6 @@ export const reducer = createReducer(initialState, (builder) => {
         })
         .addCase(actions.setColorMode, (state, action) => {
             state.colorMode = action.payload;
-            updateLogSourceColors(state);
         })
         .addCase(actions.setHideColorModeDetail, (state, action) => {
             state.hideColorModeDetail = action.payload;
@@ -46,7 +41,6 @@ export const reducer = createReducer(initialState, (builder) => {
         .addCase(actions.toggleExpandCollapse, (state, action) => {
             let logLine = state.idToLogLine[action.payload.id];
             if (logLine) {
-                // TODO should this be on a map for log viewer as a whole?
                 // TODO can I just set on logLine? or is that a copy?
 
                 state.idToLogLine[action.payload.id].explicitExpandIcon = action.payload.expandIcon;
@@ -65,26 +59,12 @@ export const reducer = createReducer(initialState, (builder) => {
                     beforeId = state.idToLogLine[beforeId].dupeIdBefore;
                 }
             }
+        })
+        .addCase(actions.setLogSourceColor, (state, action) => {
+            state.logSourceColors[action.payload.source] = action.payload.color;
         });
     }
 );
-
-function getLogSourceColors(state: LogViewerState) {
-    let existingColors = Object.values(state.logSourceColors).map((hex) => Color.fromHex(hex));
-    let numColors = state.selectedSources.length;
-    let backgroundColor = Color.fromHex(state.backgroundColor);
-    return Color.getContrastingColors(numColors, existingColors, backgroundColor);
-}
-
-function updateLogSourceColors(state: LogViewerState) {
-    let needNewColors = state.selectedSources.length !== Object.keys(state.logSourceColors).length;
-    if (needNewColors && state.colorMode === ColorModeEnum.SOURCE) {
-        let colors = getLogSourceColors(state);
-        state.selectedSources.map((source, idx) => {
-            state.logSourceColors[source] = colors[idx].asHex();
-        });
-    }
-}
 
 function mergeLogLines(state: LogViewerState, logLines: ILogLine[]) {
     let sourceToLastLogLine: {[key: string]: ILogLine} = {};

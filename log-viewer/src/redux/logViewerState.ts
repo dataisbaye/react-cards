@@ -3,12 +3,8 @@ import {ILogSourceConfig} from '../models/logSourceConfig.ts';
 import ColorModeEnum from "../enums/colorMode.ts";
 import {ColorModeType, LogSourceType} from "../models/types.ts";
 
-type MapStrColor = { [key: string]: string };
-type MapStrLogSourceConfig = { [key: string]: ILogSourceConfig};
-type MapStrLogLine = { [key: string]: ILogLine};
-
 export interface LogViewerState {
-  idToLogLine: MapStrLogLine;
+  idToLogLine: { [key: string]: ILogLine };
   logLineIds: string[];
   selectedSources: LogSourceType[];
 
@@ -20,10 +16,10 @@ export interface LogViewerState {
   colorMode: ColorModeType;
   hideColorModeDetail: boolean;
   backgroundColor: string;
-  logSourceColors: MapStrColor;
+  logSourceColors: { [key: string]: string };
 
   // Source configs
-  logSourceConfigs: MapStrLogSourceConfig;
+  logSourceConfigs: { [key: string]: ILogSourceConfig };
 
   // Settings modal
   showSettingsModal: boolean;
@@ -40,7 +36,7 @@ export const initialState: LogViewerState = {
 
   // Color
   colorMode: ColorModeEnum.LEVEL,
-  hideColorModeDetail: false,
+  hideColorModeDetail: true,
   backgroundColor: '#000000',
   logSourceColors: {},
 

@@ -3,7 +3,7 @@ import {DupeModeType, ExpandIconType, LogLevelType, LogSourceType} from "./types
 import DupeModeEnum from "../enums/dupeMode.ts";
 import ExpandIconEnum from "../enums/expandIcon.ts";
 
-type LogLineRow = [string, string, string];
+export type LogLineRow = [string, string, string];
 
 export interface ILogLine {
     id: string;

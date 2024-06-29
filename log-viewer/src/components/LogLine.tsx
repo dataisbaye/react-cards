@@ -1,6 +1,4 @@
 import {ReactElement} from "react";
-import {LogViewerState} from "../redux/logViewerState.ts";
-import {useDispatch, useSelector} from "react-redux";
 import ColorModeEnum from "../enums/colorMode.ts";
 import DupeModeEnum from "../enums/dupeMode.ts";
 import moment from "moment";
@@ -8,21 +6,23 @@ import {LogLevelColorEnum} from "../enums/logLevel.ts";
 import {toggleExpandCollapse} from "../redux/actions.ts";
 import {ToggleExpandCollapsePayload} from "../redux/types.ts";
 import LogLineModule from "../models/logLine.ts";
+import {useAppDispatch, useAppSelector} from "../redux/hooks.ts";
 
 type LogLineProps = {
     logLineId: string;
 }
 
 const LogLine = ({ logLineId }: LogLineProps ): ReactElement => {
-    let dispatch = useDispatch();
-    let logLine = useSelector((state: LogViewerState) => state.idToLogLine[logLineId]);
-    let selectedSources = useSelector((state: LogViewerState) => state.selectedSources);
-    let colorMode = useSelector((state: LogViewerState) => state.colorMode);
-    let hideColorModeDetail = useSelector((state: LogViewerState) => state.hideColorModeDetail);
-    let hideTimestamps = useSelector((state: LogViewerState) => state.hideTimestamps);
-    let hideTimestampYear = useSelector((state: LogViewerState) => state.hideTimestampYear);
-    let logSourceConfigs = useSelector((state: LogViewerState) => state.logSourceConfigs);
-    let logSourceColors = useSelector((state: LogViewerState) => state.logSourceColors);
+    let dispatch = useAppDispatch();
+    let logLine = useAppSelector((state) => state.idToLogLine[logLineId]);
+    let selectedSources = useAppSelector((state) => state.selectedSources);
+    let backgroundColor = useAppSelector((state) => state.backgroundColor);
+    let colorMode = useAppSelector((state) => state.colorMode);
+    let hideColorModeDetail = useAppSelector((state) => state.hideColorModeDetail);
+    let hideTimestamps = useAppSelector((state) => state.hideTimestamps);
+    let hideTimestampYear = useAppSelector((state) => state.hideTimestampYear);
+    let logSourceConfigs = useAppSelector((state) => state.logSourceConfigs);
+    let logSourceColors = useAppSelector((state) => state.logSourceColors);
 
     let hasLogSourceConfig = logSourceConfigs[logLine.source] !== undefined;
     let dupeMode = hasLogSourceConfig ? logSourceConfigs[logLine.source].dupeMode : DupeModeEnum.SHOW_FIRST;
@@ -45,7 +45,7 @@ const LogLine = ({ logLineId }: LogLineProps ): ReactElement => {
         if (colorMode === ColorModeEnum.LEVEL) {
             return LogLevelColorEnum[logLine.level];
         } else {
-            return logSourceColors[logLine.source] ?? 'black';
+            return logSourceColors[logLine.source] ?? backgroundColor;
         }
     }
 

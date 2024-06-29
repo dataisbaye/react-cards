@@ -3,16 +3,16 @@ import Form from 'react-bootstrap/Form';
 import {ReactElement} from "react";
 import LogSourceConfig, {ILogSourceConfig} from "../models/logSourceConfig.ts";
 import DupeModeEnum from "../enums/dupeMode.ts";
-import {useDispatch} from "react-redux";
 import * as actions from "../redux/actions.ts";
 import moment from "moment";
+import {useAppDispatch} from "../redux/hooks.ts";
 
 type LogSourceConfigProps = {
     logSourceConfig: ILogSourceConfig;
 }
 
 const LogSourceConfigAccordion = ({ logSourceConfig }: LogSourceConfigProps ): ReactElement => {
-    let dispatch = useDispatch();
+    let dispatch = useAppDispatch();
 
     const renderDupeModeOptions = () => {
         let dupeModes = Object.values<string>(DupeModeEnum);

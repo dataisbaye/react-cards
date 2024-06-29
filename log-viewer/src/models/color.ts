@@ -110,6 +110,15 @@ class Color {
         return hex;
     }
 
+    static getRandomColor(): Color {
+        let color = new Color();
+        color.r = Math.random();
+        color.g = Math.random();
+        color.b = Math.random();
+        color.a = 1;
+        return color;
+    }
+
     overlayOn(other: Color): Color {
         let myA = this.asDoubleComponent("A");
 
@@ -188,199 +197,6 @@ class Color {
         }
 
         return (cmin + cmax) / 2;
-    }
-
-    static getRandomColor(): Color {
-        let color = new Color();
-        color.r = Math.random();
-        color.g = Math.random();
-        color.b = Math.random();
-        color.a = 1;
-        return color;
-    }
-
-    static getCost(colors: Color[], bg: Color): number {
-        let maxContrast = 21;
-        let minContrast = 1;
-        let contrastRange = maxContrast - minContrast;
-
-        let n = colors.length;
-
-        let worstBgContrast = colors[0].contrast(bg);
-        let worstContrast = n == 1 ? 0 : maxContrast;
-        for (let i = 0; i < n; i++) {
-            let bgContrast = colors[i].contrast(bg);
-            worstBgContrast = Math.min(worstBgContrast, bgContrast);
-            for (let j = i + 1; j < n; j++) {
-                let contrast = colors[i].contrast(colors[j]);
-                worstContrast = Math.min(worstContrast, contrast);
-            }
-        }
-
-        console.log(`worstContrast: ${worstContrast}, worstBgContrast: ${worstBgContrast}`);
-        console.log(((worstContrast+worstBgContrast) - (2*minContrast)) / (2*contrastRange));
-
-        let contrastRatio = Math.max(0.000000001, ((worstContrast+worstBgContrast) - (2*minContrast)) / (2*contrastRange));
-        return (- Math.log(contrastRatio));
-
-        /*
-        let maxContrast = 21;
-        let minContrast = 1;
-        let contrastRange = maxContrast - minContrast;
-        let sum = 0;
-
-        // Inflate the background contribution to cost because readability is more important than distinguish-ability
-        let numColors = colors.length;
-        let colorsPlusBg = [...colors];
-        for (let i = 0; i < numColors; i++) {
-            colorsPlusBg.push(bg);
-        }
-
-        let n = colorsPlusBg.length;
-        if (n < 2) {
-            return 0;
-        }
-        for (let i = 0; i < n; i++) {
-            for (let j = i + 1; j < n; j++) {
-                let contrast = Math.max(0.000000001, colorsPlusBg[i].contrast(colorsPlusBg[j]) - minContrast);
-                sum += (- Math.log(contrast / contrastRange));
-            }
-        }
-        return sum / (n * (n - 1) / 2);
-         */
-    }
-
-    static prevCost(costs: number[][], colorIdx: number): number {
-        let prevColorIdx = colorIdx === 0 ? costs.length - 1 : colorIdx - 1;
-        let prevColorCosts = costs[prevColorIdx];
-        return prevColorCosts[prevColorCosts.length - 1];
-    }
-
-    static getContrastingColors(n: number, existingColors: Color[], bg: Color) {
-        //console.log(`getting ${n} contrasting colors`)
-        let colors = [];
-        let overlaidColors: Color[] = [];
-        for (let i = 0; i < n; i++) {
-            if (i < existingColors.length) {
-                colors.push(existingColors[i]);
-            } else {
-                colors.push(Color.getRandomColor());
-            }
-            overlaidColors.push(colors[i].overlayOn(bg));
-        }
-
-        // Gradient descent to determine how to modify colors to maximize contrast
-        let numRounds = 100;
-        let inc = 0.001;
-
-        let costs: number[][] = [];
-        let improvements: number[][] = [];
-        let learningRates = [];
-        let consecutiveImprovements = [];
-        for (let i = 0; i < n; i++) {
-            costs.push([]);
-            improvements.push([]);
-            learningRates.push(0.1);
-            consecutiveImprovements.push(0);
-        }
-        costs[0].push(Color.getCost(overlaidColors, bg));
-        improvements[0].push(0);
-
-        let sufficientlyMinimalCost = 0.25;
-        let maxImprovements = [];
-        let maxImprovementThreshold = 0.0000001;
-        let minRounds = 10;
-        let bumpLearningRateAfter = 5;
-        let noImprovementThreshold = 10;
-
-        for (let round = 0; round < numRounds; round++) {
-            let startColorIdx = round === 0 ? 1 : 0;
-            for (let colorIdx = startColorIdx; colorIdx < n; colorIdx++) {
-                let origOverlaidColor = overlaidColors[colorIdx];
-                let prevCost = Color.prevCost(costs, colorIdx);
-
-                type MapStrNum = { [key: string]: number };
-                let partialDerivatives: MapStrNum = {};
-                for (let j of ['r', 'g', 'b', 'a']) {
-                    let canIncrease = colors[colorIdx].asDoubleComponent(j) + inc < 1;
-                    let needsFlipped = !canIncrease;
-
-                    let newColor = Color.copy(colors[colorIdx]);
-                    newColor.set(j, canIncrease ? newColor.get(j) + inc : newColor.get(j) - inc);
-
-                    let newOverlaidColor = newColor.overlayOn(bg);
-
-                    overlaidColors[colorIdx] = newOverlaidColor;
-                    let newCost = Color.getCost(overlaidColors, bg);
-                    overlaidColors[colorIdx] = origOverlaidColor;
-
-                    let partialDerivative = (prevCost - newCost) / inc;
-                    partialDerivatives[j] = needsFlipped ? -partialDerivative : partialDerivative;
-                }
-
-                let updatedColor = Color.copy(colors[colorIdx]);
-                for (let j of ['r', 'g', 'b']) {
-                    let delta = partialDerivatives[j] * learningRates[colorIdx];
-                    updatedColor.set(j, Math.min(1, Math.max(0, updatedColor.asDoubleComponent(j) + delta)));
-                }
-
-                let updatedOverlaidColor = updatedColor.overlayOn(bg);
-                overlaidColors[colorIdx] = updatedOverlaidColor;
-                let updatedCost = Color.getCost(overlaidColors, bg);
-
-                // Check if actually improved
-                let improvement = Math.max(0, prevCost - updatedCost);
-                let improved = improvement > 0;
-                if (improved) {
-                    colors[colorIdx] = updatedColor;
-                    costs[colorIdx].push(updatedCost);
-                    improvements[colorIdx].push(improvement);
-                    consecutiveImprovements[colorIdx]++;
-                    if (consecutiveImprovements[colorIdx] > bumpLearningRateAfter) {
-                        learningRates[colorIdx] = Math.min(0.5, learningRates[colorIdx] * 1.5);
-                    }
-                } else {
-                    overlaidColors[colorIdx] = origOverlaidColor;
-                    costs[colorIdx].push(prevCost);
-                    improvements[colorIdx].push(0);
-                    consecutiveImprovements[colorIdx] = 0;
-                    learningRates[colorIdx] = Math.max(0.0000001, learningRates[colorIdx] / 3);
-                }
-
-                //console.log(`colorIdx: ${colorIdx}, improvement ${improvement}, learningRate ${learningRates[colorIdx]}`);
-            }
-
-            // Find max improvement
-            let maxImprovement = 0;
-            for (let colorIdx = 0; colorIdx < n; colorIdx++) {
-                let colorImprovements = improvements[colorIdx];
-                let lastImprovement = colorImprovements[colorImprovements.length - 1];
-                maxImprovement = Math.max(maxImprovement, lastImprovement);
-            }
-
-            maxImprovements.push(maxImprovement);
-
-            // Check if our last several maxImprovements are under the threshold
-            let improvingEnough = false;
-            for (let i = maxImprovements.length - 1; i >= 0 && i >= maxImprovements.length - noImprovementThreshold; i--) {
-                if (maxImprovements[i] > maxImprovementThreshold) {
-                    improvingEnough = true;
-                    break;
-                }
-            }
-
-            let lastColorIdx = costs.length - 1;
-            let lastColorCosts = costs[lastColorIdx];
-            let lastCost = lastColorCosts[lastColorCosts.length - 1];
-
-            console.log(`Round ${round}, maxImprovement ${maxImprovement}, cost ${lastCost}`);
-
-            if (lastCost <= sufficientlyMinimalCost || (!improvingEnough && round >= minRounds)) {
-                break;
-            }
-        }
-
-        return colors;
     }
 }
 

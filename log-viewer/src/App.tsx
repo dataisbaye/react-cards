@@ -5,7 +5,7 @@ import LogViewer from "./components/LogViewer";
 import './css/index.css';
 import SettingsModal from "./components/SettingsModal.tsx";
 import 'bootstrap/dist/css/bootstrap.min.css';
-import store from "./redux/store.ts";
+import {store} from "./redux/store.ts";
 import {Provider} from "react-redux";
 
 declare global {
@@ -19,7 +19,7 @@ declare global {
 	}
 }
 
-function App({ }: ReactCardProps) {
+function App({ cardName }: ReactCardProps) {
 	const renderRef = useRef(0);
 	renderRef.current++;
 
@@ -27,7 +27,7 @@ function App({ }: ReactCardProps) {
 		<Provider store={store}>
 			<ha-card>
 				<LogViewer />
-				<SettingsModal />
+				<SettingsModal cardName={cardName} />
 			</ha-card>
 		</Provider>
 	);

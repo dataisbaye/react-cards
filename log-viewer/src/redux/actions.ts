@@ -1,7 +1,7 @@
 import {createAction} from "@reduxjs/toolkit";
 import {ILogSourceConfig} from "../models/logSourceConfig.ts";
 import {ILogLine} from "../models/logLine.ts";
-import {ToggleExpandCollapsePayload} from "./types.ts";
+import {SetLogSourceColorPayload, ToggleExpandCollapsePayload} from "./types.ts";
 import {ColorModeType, LogSourceType} from "../models/types.ts";
 
 export const setBackgroundColor = createAction<string>('SET_BACKGROUND_COLOR');
@@ -16,3 +16,4 @@ export const setHideTimestamps = createAction<boolean>('SET_HIDE_TIMESTAMPS');
 export const setHideTimestampYear = createAction<boolean>('SET_HIDE_TIMESTAMP_YEAR');
 export const setLogSourceConfig = createAction<ILogSourceConfig>('SET_LOG_SOURCE_CONFIG');
 export const toggleExpandCollapse = createAction<ToggleExpandCollapsePayload>('TOGGLE_EXPAND_COLLAPSE');
+export const setLogSourceColor = createAction<SetLogSourceColorPayload>('SET_LOG_SOURCE_COLOR');
