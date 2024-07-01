@@ -15,6 +15,7 @@ export const reducer = createReducer(initialState, (builder) => {
           state.showSettingsModal = false;
         })
         .addCase(actions.setSelectedSources, (state, action) => {
+            console.log('setting selected sources');
             state.selectedSources = action.payload.map((source) => source);
         })
         .addCase(actions.addLogSourceConfig, (state, action) => {

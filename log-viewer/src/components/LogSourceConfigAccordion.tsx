@@ -6,6 +6,7 @@ import DupeModeEnum from "../enums/dupeMode.ts";
 import * as actions from "../redux/actions.ts";
 import moment from "moment";
 import {useAppDispatch} from "../redux/hooks.ts";
+import LogLevelEnum from "../enums/logLevel.ts";
 
 type LogSourceConfigProps = {
     logSourceConfig: ILogSourceConfig;
@@ -46,6 +47,41 @@ const LogSourceConfigAccordion = ({ logSourceConfig }: LogSourceConfigProps ): R
             >
                 <option value="" disabled>Select Dupe Mode</option>
                 {renderDupeModeOptions()}
+            </Form.Select>
+        );
+    }
+
+    const renderLevelOptions = () => {
+        let levels = Object.values(LogLevelEnum);
+        return levels.map((level) => {
+            let dupeSingularPlural = level === DupeModeEnum.SHOW_ALL ? 'Dupes' : 'Dupe';
+            let display = level.replace(/_/g, ' ').toTitleCase() + ' ' + dupeSingularPlural;
+            return (
+                <option key={level} value={level}>
+                    {display}
+                </option>
+            );
+        });
+    }
+
+    const renderLevelSelect = () => {
+        return (
+            <Form.Select
+                multiple
+                value={logSourceConfig.levels}
+                onChange={(event: React.ChangeEvent<HTMLSelectElement>) => {
+                    let selectedLevels = Array.from(event.target.selectedOptions).map((option) => option.value);
+                    let newLogSourceConfig = LogSourceConfig.create(
+                        logSourceConfig.name,
+                        new Set(selectedLevels),
+                        logSourceConfig.dupeMode,
+                        logSourceConfig.startTimestamp,
+                        logSourceConfig.endTimestamp,
+                    );
+                    dispatch(actions.setLogSourceConfig(newLogSourceConfig));
+                }}
+            >
+                {renderLevelOptions()}
             </Form.Select>
         );
     }
@@ -95,6 +131,7 @@ const LogSourceConfigAccordion = ({ logSourceConfig }: LogSourceConfigProps ): R
     const renderForm = () => {
         return (
             <div className={"config-source-form"} data-source={logSourceConfig.nameHyphenated}>
+                {renderLevelSelect()}
                 {renderDupeModeSelect()}
                 {renderStartTimestampInput()}
                 {renderEndTimestampInput()}

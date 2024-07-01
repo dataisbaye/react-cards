@@ -26,6 +26,7 @@ const LogLine = ({ logLineId }: LogLineProps ): ReactElement => {
 
     let hasLogSourceConfig = logSourceConfigs[logLine.source] !== undefined;
     let dupeMode = hasLogSourceConfig ? logSourceConfigs[logLine.source].dupeMode : DupeModeEnum.SHOW_FIRST;
+    let levels = new Set(hasLogSourceConfig ? logSourceConfigs[logLine.source].levels : []);
 
     let isFirst = logLine.dupeIdBefore === null;
     let isLast =  logLine.dupeIdAfter === null;
@@ -120,6 +121,7 @@ const LogLine = ({ logLineId }: LogLineProps ): ReactElement => {
 
     if (!hasLogSourceConfig
         || !selectedSources.includes(logLine.source)
+        || !levels.has(logLine.level)
         || (
             logLine.explicitExpandIcon === '+'
             && (

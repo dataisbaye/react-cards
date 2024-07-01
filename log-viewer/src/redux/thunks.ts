@@ -13,7 +13,7 @@ import {AppThunk} from './store'
 import {ColorModeType, LogSourceType} from "../models/types.ts";
 import LogGenerator from "../models/logGenerator.ts";
 import {getLogs} from "../api/logs.ts";
-import {ILogSourceConfig} from "../models/logSourceConfig.ts";
+import LogSourceConfig, {ILogSourceConfig} from "../models/logSourceConfig.ts";
 
 export const updateSelectedSources =
     (
@@ -69,8 +69,8 @@ export const updateLogSourceColors =
       colorMode = colorMode ?? state.colorMode;
       backgroundColor = backgroundColor ?? state.backgroundColor;
 
-      let needNewColors = selectedSources.length !== Object.keys(state.logSourceColors).length;
-      if (needNewColors && colorMode === ColorModeEnum.SOURCE) {
+      // We're assuming we need new colors as long as the colorMode is SOURCE
+      if (colorMode === ColorModeEnum.SOURCE) {
           let existingColors = Object.values(state.logSourceColors).map((hex) => Color.fromHex(hex));
           let bgColor = Color.fromHex(backgroundColor);
           existingColors.push(bgColor);
@@ -107,7 +107,9 @@ export const updateLogs =
 
             let logs = [];
             if (process.env.NODE_ENV !== 'development') {
-                logs = await getLogs(apiUrl, apiToken, source);
+                let startAt = LogSourceConfig.momentStart(logSourceConfig);
+                let endAt = LogSourceConfig.momentEnd(logSourceConfig);
+                logs = await getLogs(apiUrl, apiToken, source, startAt, endAt);
             } else {
                 let logGenerator = new LogGenerator();
                 logs = logGenerator.generate(logSourceConfig, 100);

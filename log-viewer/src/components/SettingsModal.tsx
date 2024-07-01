@@ -17,9 +17,11 @@ import cardStates from "../cardStates.ts";
 
 type SettingsModalProps = {
     cardName: string;
+    modalRef: any;
 }
 
-const SettingsModal = ({cardName}: SettingsModalProps): ReactElement => {
+const SettingsModal = ({cardName, modalRef}: SettingsModalProps): ReactElement => {
+    console.log('SettingsModal');
     let dispatch = useAppDispatch();
     let show = useAppSelector((state) => state.showSettingsModal);
 
@@ -38,22 +40,28 @@ const SettingsModal = ({cardName}: SettingsModalProps): ReactElement => {
     let logSourceConfigs = useAppSelector((state) => state.logSourceConfigs);
 
     const fallback = {
-        config: {
+        hass: {
             value: {
-                apiUrl: 'https://example.com',
-                apiToken: 'example-token',
+                states: {
+                    apiUrl: {
+                        state: 'https://example.com'
+                    },
+                    apiToken: {
+                        state:'example-token'
+                    },
+                }
             },
         }
     };
 
     const apiUrl = useComputed(() => {
-        const { config } = cardStates.value[cardName] ?? fallback;
-        return (config.value as any)?.apiUrl;
+        const { hass } = cardStates.value[cardName] || fallback;
+        return (hass.value as any).states['input_text.api_url']?.state;
     });
 
     const apiToken = useComputed(() => {
-        const { config } = cardStates.value[cardName] ?? fallback;
-        return (config.value as any)?.apiToken;
+        const { hass } = cardStates.value[cardName] || fallback;
+        return (hass.value as any).states['input_text.api_token']?.state;
     });
 
     let debounceDispatchHandler: string | number | NodeJS.Timeout;
@@ -79,6 +87,7 @@ const SettingsModal = ({cardName}: SettingsModalProps): ReactElement => {
                 multiple
                 value={selectedSources.map((source) => source)}
                 onChange={(event) => {
+                    console.log('Selected sources changed');
                     let selectedSourceNames = Array.from(event.target.selectedOptions).map((option) => option.value);
                     for (const source of selectedSourceNames) {
                         if (!logSourceConfigs[source]) {
@@ -216,8 +225,12 @@ const SettingsModal = ({cardName}: SettingsModalProps): ReactElement => {
         });
     }
 
+    console.log('About to render the modal');
+    console.log(`modalRef.current: ${modalRef.current}`);
+
     return (
         <Modal
+            container={modalRef}
             show={show}
             onHide={() => dispatch(actions.closeSettings())}
         >
