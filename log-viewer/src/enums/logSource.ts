@@ -1,8 +1,8 @@
 const LogSourceEnum = {
-    ERROR_LOG: "error_log",
-    MAIN_LOG: "main_log",
-    ACCESS_LOG: "access_log",
-    DIAG_LOG: "diag_log",
+    ERROR_LOG: "error",
+    MAIN_LOG: "appdaemon",
+    ACCESS_LOG: "access",
+    DIAG_LOG: "diag",
 
     AIR_GRADIENT: "air_gradient",
     ALARM: "alarm",

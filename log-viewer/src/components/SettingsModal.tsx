@@ -27,9 +27,13 @@ const SettingsModal = ({cardName, modalRef}: SettingsModalProps): ReactElement =
 
     let selectedSources = useAppSelector((state) => state.selectedSources);
 
+    // Time Range
+    let startTimestamp = useAppSelector((state) => state.startTimestamp);
+    let endTimestamp = useAppSelector((state) => state.endTimestamp);
+
     // Timestamps
-    let hideTimestamps = useAppSelector((state) => state.hideTimestamps);
-    let hideTimestampYear = useAppSelector((state) => state.hideTimestampYear);
+    let timestampFormat = useAppSelector((state) => state.timestampFormat);
+    let reverse = useAppSelector((state) => state.reverse);
 
     // Color Mode
     let colorMode = useAppSelector((state) => state.colorMode);
@@ -83,8 +87,9 @@ const SettingsModal = ({cardName, modalRef}: SettingsModalProps): ReactElement =
         });
 
         return (
-            <Form.Select
+            <select
                 multiple
+                className={"form-control"}
                 value={selectedSources.map((source) => source)}
                 onChange={(event) => {
                     console.log('Selected sources changed');
@@ -93,14 +98,12 @@ const SettingsModal = ({cardName, modalRef}: SettingsModalProps): ReactElement =
                         if (!logSourceConfigs[source]) {
                             let levels = new Set(Object.values(LogLevelEnum));
                             let dupeMode = DupeModeEnum.SHOW_FIRST;
-                            let startTimestamp = moment().subtract(1, 'days');
-                            let endTimestamp = moment();
                             let logSourceConfig = LogSourceConfig.create(
                                 source,
                                 levels,
                                 dupeMode,
-                                startTimestamp.format(LogSourceConfig.timestampFormat),
-                                endTimestamp.format(LogSourceConfig.timestampFormat),
+                                startTimestamp,
+                                endTimestamp,
                             );
 
                             dispatch(updateLogs(source, apiUrl.value, apiToken.value, logSourceConfig));
@@ -109,11 +112,46 @@ const SettingsModal = ({cardName, modalRef}: SettingsModalProps): ReactElement =
                 }}
             >
                 {options}
-            </Form.Select>
+            </select>
+        );
+    }
+
+    const renderStartTimestampInput = () => {
+        return (
+            <Form.Control
+                type={"datetime-local"}
+                name={"startTimestamp"}
+                value={startTimestamp}
+                onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                    dispatch(actions.setStartTimestamp(event.target.value));
+                }}
+            />
+        );
+    }
+
+    const renderEndTimestampInput = () => {
+        return (
+            <Form.Control
+                type={"datetime-local"}
+                name={"endTimestamp"}
+                value={endTimestamp}
+                onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                    dispatch(actions.setEndTimestamp(event.target.value));
+                }}
+            />
         );
     }
 
     const renderGlobalSettingsFormAccordion = () => {
+        let now = moment();
+        let timestampFormats = [
+            'YYYY-MM-DD HH:mm:ss.SSS',
+            'YYYY-MM-DD HH:mm:ss',
+            'MM-DD HH:mm:ss.SSS',
+            'MM-DD HH:mm:ss',
+            'HH:mm:ss.SSS',
+            'HH:mm:ss',
+        ];
         return (
             <Accordion>
                 <Accordion.Item eventKey="0">
@@ -128,38 +166,50 @@ const SettingsModal = ({cardName, modalRef}: SettingsModalProps): ReactElement =
                             </div>
                         </div>
                         <div className={"modal-section"}>
+                            <h6>Default Time Range</h6>
+                            <div className={"row"}>
+                                <div className={"col col-12"}>
+                                    {renderStartTimestampInput()}
+                                </div>
+                            </div>
+                            <div className={"row"}>
+                                <div className={"col col-12"}>
+                                    {renderEndTimestampInput()}
+                                </div>
+                            </div>
+                        </div>
+                        <div className={"modal-section"}>
                             <h6>Timestamps</h6>
                             <div className={"row"}>
                                 <div className={"col col-6"}>
-                                    <Form.Check
-                                        id={"hide-timestamps"}
-                                        className={"btn-check"}
-                                        checked={hideTimestamps}
+                                    <Form.Select
+                                        value={timestampFormat}
                                         onChange={(event) => {
-                                            dispatch(actions.setHideTimestamps(event.target.checked));
+                                            dispatch(actions.setTimestampFormat(event.target.value));
                                         }}
-                                    />
-                                    <Form.Label
-                                        className={`btn ${hideTimestamps ? 'btn-primary' : 'btn-outline-primary'}`}
-                                        htmlFor={"hide-timestamps"}
                                     >
-                                        Hide Timestamps
-                                    </Form.Label>
+                                        {timestampFormats.map((format) => {
+                                            return (
+                                                <option key={format} value={format}>{now.format(format)}</option>
+                                            );
+                                        })}
+                                        <option key="" value="">None</option>
+                                    </Form.Select>
                                 </div>
                                 <div className={"col col-6"}>
                                     <Form.Check
-                                        id={"hide-timestamp-year"}
+                                        id={"reverse"}
                                         className={"btn-check"}
-                                        checked={hideTimestampYear}
+                                        checked={reverse}
                                         onChange={(event) => {
-                                            dispatch(actions.setHideTimestampYear(event.target.checked));
+                                            dispatch(actions.setReverse(event.target.checked));
                                         }}
                                     />
                                     <Form.Label
-                                        className={`btn ${hideTimestampYear ? 'btn-primary' : 'btn-outline-primary'}`}
-                                        htmlFor={"hide-timestamp-year"}
+                                        className={`btn ${reverse ? 'btn-primary' : 'btn-outline-primary'}`}
+                                        htmlFor={"reverse"}
                                     >
-                                        Hide Year
+                                        Latest Logs First
                                     </Form.Label>
                                 </div>
                             </div>
@@ -220,7 +270,10 @@ const SettingsModal = ({cardName, modalRef}: SettingsModalProps): ReactElement =
     const renderSourceConfigFormAccordions = () => {
         return Object.values(logSourceConfigs).map((logSourceConfig: ILogSourceConfig) => {
             return (
-                <LogSourceConfigAccordion key={logSourceConfig.nameHyphenated} logSourceConfig={logSourceConfig} />
+                <LogSourceConfigAccordion
+                    key={logSourceConfig.nameHyphenated}
+                    logSourceConfig={logSourceConfig}
+                    cardName={cardName} />
             );
         });
     }

@@ -5,15 +5,46 @@ import LogSourceConfig, {ILogSourceConfig} from "../models/logSourceConfig.ts";
 import DupeModeEnum from "../enums/dupeMode.ts";
 import * as actions from "../redux/actions.ts";
 import moment from "moment";
-import {useAppDispatch} from "../redux/hooks.ts";
+import {useAppDispatch, useAppSelector} from "../redux/hooks.ts";
 import LogLevelEnum from "../enums/logLevel.ts";
+import {updateLogSourceConfig} from "../redux/thunks.ts";
+import {useComputed} from "@preact/signals-react";
+import cardStates from "../cardStates.ts";
 
 type LogSourceConfigProps = {
     logSourceConfig: ILogSourceConfig;
+    cardName: string;
 }
 
-const LogSourceConfigAccordion = ({ logSourceConfig }: LogSourceConfigProps ): ReactElement => {
+const LogSourceConfigAccordion = ({ logSourceConfig, cardName }: LogSourceConfigProps ): ReactElement => {
     let dispatch = useAppDispatch();
+    let startTimestamp = useAppSelector((state) => state.startTimestamp);
+    let endTimestamp = useAppSelector((state) => state.endTimestamp);
+
+    const fallback = {
+        hass: {
+            value: {
+                states: {
+                    apiUrl: {
+                        state: 'https://example.com'
+                    },
+                    apiToken: {
+                        state:'example-token'
+                    },
+                }
+            },
+        }
+    };
+
+    const apiUrl = useComputed(() => {
+        const { hass } = cardStates.value[cardName] || fallback;
+        return (hass.value as any).states['input_text.api_url']?.state;
+    });
+
+    const apiToken = useComputed(() => {
+        const { hass } = cardStates.value[cardName] || fallback;
+        return (hass.value as any).states['input_text.api_token']?.state;
+    });
 
     const renderDupeModeOptions = () => {
         let dupeModes = Object.values<string>(DupeModeEnum);
@@ -54,8 +85,7 @@ const LogSourceConfigAccordion = ({ logSourceConfig }: LogSourceConfigProps ): R
     const renderLevelOptions = () => {
         let levels = Object.values(LogLevelEnum);
         return levels.map((level) => {
-            let dupeSingularPlural = level === DupeModeEnum.SHOW_ALL ? 'Dupes' : 'Dupe';
-            let display = level.replace(/_/g, ' ').toTitleCase() + ' ' + dupeSingularPlural;
+            let display = level.replace(/_/g, ' ').toTitleCase();
             return (
                 <option key={level} value={level}>
                     {display}
@@ -101,7 +131,7 @@ const LogSourceConfigAccordion = ({ logSourceConfig }: LogSourceConfigProps ): R
                         moment(event.target.value, sourceTimestampFormat).format(LogSourceConfig.timestampFormat),
                         logSourceConfig.endTimestamp,
                     );
-                    dispatch(actions.setLogSourceConfig(newLogSourceConfig));
+                    dispatch(updateLogSourceConfig(newLogSourceConfig, apiUrl.value, apiToken.value));
                 }}
             />
         );
@@ -122,7 +152,7 @@ const LogSourceConfigAccordion = ({ logSourceConfig }: LogSourceConfigProps ): R
                         logSourceConfig.startTimestamp,
                         moment(event.target.value, sourceTimestampFormat).format(LogSourceConfig.timestampFormat),
                     );
-                    dispatch(actions.setLogSourceConfig(newLogSourceConfig));
+                    dispatch(updateLogSourceConfig(newLogSourceConfig, apiUrl.value, apiToken.value));
                 }}
             />
         );

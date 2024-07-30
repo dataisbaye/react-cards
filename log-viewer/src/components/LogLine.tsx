@@ -10,17 +10,18 @@ import {useAppDispatch, useAppSelector} from "../redux/hooks.ts";
 
 type LogLineProps = {
     logLineId: string;
+    listItemStyle: any;
+    maxSourceLength: number;
 }
 
-const LogLine = ({ logLineId }: LogLineProps ): ReactElement => {
+const LogLine = ({ logLineId, listItemStyle, maxSourceLength }: LogLineProps ): ReactElement => {
     let dispatch = useAppDispatch();
     let logLine = useAppSelector((state) => state.idToLogLine[logLineId]);
-    let selectedSources = useAppSelector((state) => state.selectedSources);
+    let selectedSources = useAppSelector((state) => new Set(state.selectedSources));
     let backgroundColor = useAppSelector((state) => state.backgroundColor);
     let colorMode = useAppSelector((state) => state.colorMode);
     let hideColorModeDetail = useAppSelector((state) => state.hideColorModeDetail);
-    let hideTimestamps = useAppSelector((state) => state.hideTimestamps);
-    let hideTimestampYear = useAppSelector((state) => state.hideTimestampYear);
+    let timestampFormat = useAppSelector((state) => state.timestampFormat);
     let logSourceConfigs = useAppSelector((state) => state.logSourceConfigs);
     let logSourceColors = useAppSelector((state) => state.logSourceColors);
 
@@ -51,15 +52,14 @@ const LogLine = ({ logLineId }: LogLineProps ): ReactElement => {
     }
 
     let renderTimestamp = () => {
-        if (hideTimestamps) {
+        if (timestampFormat === '') {
             return null;
         }
 
-        let sourceTimestampFormat = 'YYYY-MM-DD HH:mm:ss';
-        let targetTimestampFormat = hideTimestampYear ? 'MM-DD HH:mm:ss' : 'YYYY-MM-DD HH:mm:ss';
+        let sourceTimestampFormat = 'YYYY-MM-DD HH:mm:ss.SSS';
         return (
             <span title={hiddenColorModeTooltipText()}>
-                {moment(logLine.timestamp, sourceTimestampFormat).format(targetTimestampFormat)}
+                {moment(logLine.timestamp, sourceTimestampFormat).format(timestampFormat)}
                 {' '}
             </span>
         );
@@ -90,8 +90,6 @@ const LogLine = ({ logLineId }: LogLineProps ): ReactElement => {
             return null;
         }
 
-        let maxSourceLength = selectedSources.reduce((max, source) => Math.max(max, source.length), 0);
-
         return (
             <span>
                 {logLine.source.padEnd(maxSourceLength+1, ' ').replace(/ /g, '\u00a0')}
@@ -120,8 +118,10 @@ const LogLine = ({ logLineId }: LogLineProps ): ReactElement => {
     }
 
     if (!hasLogSourceConfig
-        || !selectedSources.includes(logLine.source)
+        || !selectedSources.has(logLine.source)
         || !levels.has(logLine.level)
+        || moment(logLine.timestamp) < moment(logSourceConfigs[logLine.source].startTimestamp)
+        || moment(logLine.timestamp) > moment(logSourceConfigs[logLine.source].endTimestamp)
         || (
             logLine.explicitExpandIcon === '+'
             && (
@@ -146,12 +146,14 @@ const LogLine = ({ logLineId }: LogLineProps ): ReactElement => {
     };
 
     return (
-        <div style={style}>
-            {renderTimestamp()}
-            {renderSource()}
-            {renderLevel()}
-            {renderExpandCollapseIcon()}
-            {renderMessage()}
+        <div style={listItemStyle}>
+            <div style={style}>
+                {renderTimestamp()}
+                {renderSource()}
+                {renderLevel()}
+                {renderExpandCollapseIcon()}
+                {renderMessage()}
+            </div>
         </div>
     );
 }

@@ -28,7 +28,7 @@ class LogGenerator {
 
     getRandomMessage() {
         let minWords = 3;
-        let maxWords = 10;
+        let maxWords = 50;
         let numWords = Math.floor(Math.random() * (maxWords - minWords + 1)) + minWords;
         let words = ['lorem', 'ipsum', 'dolor', 'sit', 'amet'];
         let message = [];

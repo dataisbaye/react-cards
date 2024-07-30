@@ -2,6 +2,8 @@ import {v4 as uuidv4} from 'uuid';
 import {DupeModeType, ExpandIconType, LogLevelType, LogSourceType} from "./types.ts";
 import DupeModeEnum from "../enums/dupeMode.ts";
 import ExpandIconEnum from "../enums/expandIcon.ts";
+import moment from "moment";
+import {ILogSourceConfig} from "./logSourceConfig.ts";
 
 export type LogLineRow = [string, string, string];
 
@@ -101,6 +103,44 @@ class LogLine {
             case ExpandIconEnum.COLLAPSE:
                 return ExpandIconEnum.EXPAND;
         }
+    }
+
+    static isVisible(
+        logLine: ILogLine,
+        logSourceConfigs: { [key: string]: ILogSourceConfig },
+        selectedSources: LogSourceType[],
+        levels: Set<LogLevelType>,
+    ) {
+        let hasLogSourceConfig = logSourceConfigs[logLine.source] !== undefined;
+        let dupeMode = hasLogSourceConfig ? logSourceConfigs[logLine.source].dupeMode : DupeModeEnum.SHOW_ALL;
+
+        let isFirst = logLine.dupeIdBefore === null;
+        let isLast =  logLine.dupeIdAfter === null;
+
+        if (!hasLogSourceConfig
+            || !selectedSources.includes(logLine.source)
+            || !levels.has(logLine.level)
+            || moment(logLine.timestamp) < moment(logSourceConfigs[logLine.source].startTimestamp)
+            || moment(logLine.timestamp) > moment(logSourceConfigs[logLine.source].endTimestamp)
+            || (
+                logLine.explicitExpandIcon === ExpandIconEnum.EXPAND
+                && (
+                    (dupeMode === DupeModeEnum.SHOW_ALL && !isFirst && !isLast)
+                    || (dupeMode === DupeModeEnum.SHOW_FIRST && !isFirst)
+                    || (dupeMode === DupeModeEnum.SHOW_LAST && !isLast)
+                )
+            )
+            || (
+                logLine.explicitExpandIcon === ExpandIconEnum.NONE
+                && (
+                    (dupeMode === DupeModeEnum.SHOW_FIRST && !isFirst)
+                    || (dupeMode === DupeModeEnum.SHOW_LAST && !isLast)
+                )
+            )
+        ) {
+            return false;
+        }
+        return true;
     }
 }
 
